@@ -62,7 +62,8 @@ C_DEFS =  			\
 AS_INCLUDES = 
 
 # C includes
-C_INCLUDES =  	\
+C_INCLUDES =  		\
+-I user		 		\
 -I user/inc 		\
 -I $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Inc 			\
 -I $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Inc/Legacy 	\
@@ -104,6 +105,9 @@ peripherals/gpio.c		\
 peripherals/delay.c		\
 peripherals/sys.c		\
 peripherals/retarget.c	\
+peripherals/timer.c		\
+peripherals/adc.c		\
+user/parameters.c		\
 
 # ASM sources
 ASM_SOURCES =  \

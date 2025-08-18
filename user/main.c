@@ -1,4 +1,3 @@
-#include "main.h"
 #include "stdio.h"
 #include "stdint.h"
 #include "stdbool.h"
@@ -9,6 +8,9 @@
 #include "delay.h"
 #include "uart.h"
 #include "gpio.h"
+#include "timer.h"
+#include "adc.h"
+#include "parameters.h"
 #include "trace.h"
 
 int main(void)
@@ -24,7 +26,11 @@ int main(void)
   //外设初始化
   bsp_gpio_init();
   usart1_init();
-  
+  timer8_init();
+
+  phase_pwm_start();
+  phase_pwm_set( (PWM_PERIOD / 3), (PWM_PERIOD / 4), (PWM_PERIOD / 5));
+
   while (1)
   {
     if(sys_time_ms_get() - test_inter_ticks >= 1000)
@@ -44,6 +50,11 @@ int main(void)
       gpio_output_set(TEST_IO_PORT, TEST_IO_PIN, led_stat);
 
       trace_debug("sys time ms %lu\r\n", sys_time_ms_get());
+
+      if(sys_time_ms_get() > 6000)
+      {
+        phase_pwm_stop();
+      }
     }
   }
 }
