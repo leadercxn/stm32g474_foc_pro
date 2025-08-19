@@ -96,6 +96,8 @@ $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_pwr.c \
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_cortex.c \
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_uart.c \
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_uart_ex.c \
+$(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc.c \
+$(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc_ex.c \
 $(SDK_DIR)/components/trace/trace.c								\
 user/Src/system_stm32g4xx.c 		\
 user/Src/sysmem.c 		\

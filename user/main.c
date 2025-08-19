@@ -26,10 +26,16 @@ int main(void)
   //外设初始化
   bsp_gpio_init();
   usart1_init();
-  timer8_init();
+
+  trace_info("STM32G474 Pro Start \r\n\r\n\r\n")
+
+  timer8_init();    //用于生成PWM
+  adc_init();
 
   phase_pwm_start();
   phase_pwm_set( (PWM_PERIOD / 3), (PWM_PERIOD / 4), (PWM_PERIOD / 5));
+
+  adc_start();
 
   while (1)
   {
@@ -50,6 +56,11 @@ int main(void)
       gpio_output_set(TEST_IO_PORT, TEST_IO_PIN, led_stat);
 
       trace_debug("sys time ms %lu\r\n", sys_time_ms_get());
+
+      trace_debug("adc 1-%d, 2-%d, 3-%d, 4-%d, 5-%d, 6-%d, 7-%d, 8-%d\r\n", \
+      adc_sample_data_get(ADC_CH_U_VOLT), adc_sample_data_get(ADC_CH_V_VOLT), adc_sample_data_get(ADC_CH_W_VOLT), \
+      adc_sample_data_get(ADC_CH_U_I), adc_sample_data_get(ADC_CH_V_I), adc_sample_data_get(ADC_CH_W_I), \
+      adc_sample_data_get(ADC_CH_VBUS), adc_sample_data_get(ADC_CH_TEMP));
 
       if(sys_time_ms_get() > 6000)
       {
