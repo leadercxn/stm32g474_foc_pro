@@ -30,7 +30,7 @@ GETCHAR_PROTOTYPE
 {
     uint8_t  ch = 0;
 
-    usart1_rx(&ch, 1);
+    usart1_rx(&ch);
 
     return ch;
 }

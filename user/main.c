@@ -12,11 +12,16 @@
 #include "adc.h"
 #include "parameters.h"
 #include "trace.h"
+#include "app_timer.h"
+#include "mid_timer.h"
 
 int main(void)
 {
   bool led_stat = false;
   uint32_t test_inter_ticks = 0;
+
+  uint8_t usart1_rx_data[64] = {0};
+  uint8_t usart1_rx_len = 0;
 
   HAL_Init();
 //sys_stm32_clock_init(85, 2, 2, 4, 8);       /* 设置时钟,170Mhz  正点原子*/
@@ -27,8 +32,6 @@ int main(void)
   bsp_gpio_init();
   usart1_init();
 
-  trace_info("STM32G474 Pro Start \r\n\r\n\r\n")
-
   timer8_init();    //用于生成PWM
   adc_init();
 
@@ -37,36 +40,48 @@ int main(void)
 
   adc_start();
 
+  TIMER_INIT();   // 调度定时器初始化
+
+  trace_info("STM32G474 Pro Start \r\n\r\n\r\n")
+
   while (1)
   {
-    if(sys_time_ms_get() - test_inter_ticks >= 1000)
-    {
-      test_inter_ticks = sys_time_ms_get();
-
-      if(led_stat)
+      if(sys_time_ms_get() - test_inter_ticks >= 1000)
       {
-          led_stat = false;
+        test_inter_ticks = sys_time_ms_get();
+
+        if(led_stat)
+        {
+            led_stat = false;
+        }
+        else
+        {
+            led_stat = true;
+        }
+
+        gpio_output_set(LED_STAT_PORT, LED_STAT_PIN, led_stat);
+        gpio_output_set(TEST_IO_PORT, TEST_IO_PIN, led_stat);
+
+        trace_debug("sys time ms %lu\r\n", sys_time_ms_get());
+
+        trace_debug("adc 1-%d, 2-%d, 3-%d, 4-%d, 5-%d, 6-%d, 7-%d, 8-%d\r\n", \
+        adc_sample_data_get(ADC_CH_U_VOLT), adc_sample_data_get(ADC_CH_V_VOLT), adc_sample_data_get(ADC_CH_W_VOLT), \
+        adc_sample_data_get(ADC_CH_U_I), adc_sample_data_get(ADC_CH_V_I), adc_sample_data_get(ADC_CH_W_I), \
+        adc_sample_data_get(ADC_CH_VBUS), adc_sample_data_get(ADC_CH_TEMP));
+
+        if(sys_time_ms_get() > 6000)
+        {
+          phase_pwm_stop();
+        }
       }
-      else
+
+      usart1_rx_len = usart1_rx(usart1_rx_data);
+      if(usart1_rx_len > 0)
       {
-          led_stat = true;
+        trace_debug("u1 rx %d data: %s\r\n", usart1_rx_len, usart1_rx_data);
       }
 
-      gpio_output_set(LED_STAT_PORT, LED_STAT_PIN, led_stat);
-      gpio_output_set(TEST_IO_PORT, TEST_IO_PIN, led_stat);
-
-      trace_debug("sys time ms %lu\r\n", sys_time_ms_get());
-
-      trace_debug("adc 1-%d, 2-%d, 3-%d, 4-%d, 5-%d, 6-%d, 7-%d, 8-%d\r\n", \
-      adc_sample_data_get(ADC_CH_U_VOLT), adc_sample_data_get(ADC_CH_V_VOLT), adc_sample_data_get(ADC_CH_W_VOLT), \
-      adc_sample_data_get(ADC_CH_U_I), adc_sample_data_get(ADC_CH_V_I), adc_sample_data_get(ADC_CH_W_I), \
-      adc_sample_data_get(ADC_CH_VBUS), adc_sample_data_get(ADC_CH_TEMP));
-
-      if(sys_time_ms_get() > 6000)
-      {
-        phase_pwm_stop();
-      }
-    }
+      mid_timer_loop_task();  //虚拟定时器的循环执行
   }
 }
 

@@ -69,7 +69,13 @@ C_INCLUDES =  		\
 -I $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Inc/Legacy 	\
 -I $(SDK_DIR)/platform/stm32/stm32g4/CMSIS/Device/ST/STM32G4xx/Include 	\
 -I $(SDK_DIR)/platform/stm32/stm32g4/CMSIS/Include						\
--I $(SDK_DIR)/components/trace	\
+-I $(SDK_DIR)/components/queue				\
+-I $(SDK_DIR)/components/app_timer			\
+-I $(SDK_DIR)/components/app_scheduler		\
+-I $(SDK_DIR)/components/app_fifo			\
+-I $(SDK_DIR)/components/lib_err			\
+-I $(SDK_DIR)/components/util				\
+-I $(SDK_DIR)/components/trace				\
 -I peripherals								\
 -I bsp										\
 -I peripherals								\
@@ -98,10 +104,13 @@ $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_uart.c 
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_uart_ex.c \
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc.c \
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc_ex.c \
+$(SDK_DIR)/components/app_scheduler/app_scheduler.c				\
+$(SDK_DIR)/components/app_fifo/app_fifo.c						\
 $(SDK_DIR)/components/trace/trace.c								\
-user/Src/system_stm32g4xx.c 		\
-user/Src/sysmem.c 		\
-user/Src/syscalls.c  	\
+user/src/system_stm32g4xx.c 		\
+user/src/sysmem.c 		\
+user/src/syscalls.c  	\
+peripherals/mid_timer.c \
 peripherals/uart.c		\
 peripherals/gpio.c		\
 peripherals/delay.c		\
