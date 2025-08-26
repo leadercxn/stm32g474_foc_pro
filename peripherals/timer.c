@@ -3,10 +3,13 @@
 #include "parameters.h"
 
 #include "trace.h"
+#include "six_steps.h"
 
 extern void Error_Handler(void);
 
 static TIM_HandleTypeDef m_timer8_handle;
+
+uint64_t g_tim8_50us_ticks = 0;  //50us定时器计数 1= 50us
 
 static void pwm_io_init(void)
 {
@@ -25,6 +28,23 @@ static void pwm_io_init(void)
         PC9  ---- TIM8_CH4  AF4
      *
     */
+#ifdef SIX_STEPS_ENABLE     //六步换相驱动
+
+    gpio_init_struct.Pin       = PWM_UH_PIN  | PWM_VH_PIN  | PWM_WH_PIN | PWM_CH4_PIN;
+    gpio_init_struct.Mode      = GPIO_MODE_AF_PP;
+    gpio_init_struct.Pull      = GPIO_NOPULL;
+    gpio_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
+    gpio_init_struct.Alternate = GPIO_AF4_TIM8;
+
+    HAL_GPIO_Init(PWM_UH_PORT, &gpio_init_struct);
+
+    gpio_init_struct.Pin       = PWM_UL_PIN | PWM_VL_PIN |  PWM_WL_PIN ;
+    gpio_init_struct.Mode      = GPIO_MODE_OUTPUT_PP;
+    gpio_init_struct.Pull      = GPIO_NOPULL;
+    gpio_init_struct.Speed     = GPIO_SPEED_FREQ_MEDIUM;
+
+    HAL_GPIO_Init(PWM_UL_PORT, &gpio_init_struct);
+#else
 
     gpio_init_struct.Pin       = PWM_UH_PIN | PWM_UL_PIN | PWM_VH_PIN | PWM_VL_PIN | PWM_WH_PIN | PWM_WL_PIN | PWM_CH4_PIN;
     gpio_init_struct.Mode      = GPIO_MODE_AF_PP;
@@ -33,6 +53,8 @@ static void pwm_io_init(void)
     gpio_init_struct.Alternate = GPIO_AF4_TIM8;
 
     HAL_GPIO_Init(PWM_UH_PORT, &gpio_init_struct);
+#endif
+
 }
 
 int timer8_init(void)
@@ -42,21 +64,30 @@ int timer8_init(void)
     TIM_OC_InitTypeDef              oc_cfg = {0};
     TIM_BreakDeadTimeConfigTypeDef  break_deadtime_cfg = {0};
 
+#ifdef SIX_STEPS_ENABLE     //六步换相驱动
+    //timer base cfg
+    m_timer8_handle.Instance                = TIM8;
+    m_timer8_handle.Init.Prescaler          = 0;                                //不分频
+    m_timer8_handle.Init.CounterMode        = TIM_COUNTERMODE_UP;               //向上计数模式
+    m_timer8_handle.Init.Period             = PWM_PERIOD;                       //20K
+    m_timer8_handle.Init.ClockDivision      = TIM_CLOCKDIVISION_DIV1;
+    m_timer8_handle.Init.RepetitionCounter  = 0;
+    m_timer8_handle.Init.AutoReloadPreload  = TIM_AUTORELOAD_PRELOAD_DISABLE;
+#else
     //timer base cfg
     m_timer8_handle.Instance                = TIM8;
     m_timer8_handle.Init.Prescaler          = 0;                                //不分频
     m_timer8_handle.Init.CounterMode        = TIM_COUNTERMODE_CENTERALIGNED2;   //中心对齐模式2
-    m_timer8_handle.Init.Period             = (SYS_CLK_FREQ / PWM_FREQ);        //20K
+    m_timer8_handle.Init.Period             = PWM_PERIOD;                       //20K
     m_timer8_handle.Init.ClockDivision      = TIM_CLOCKDIVISION_DIV1;
     m_timer8_handle.Init.RepetitionCounter  = 0;
     m_timer8_handle.Init.AutoReloadPreload  = TIM_AUTORELOAD_PRELOAD_ENABLE;
+#endif
 
-#if 1
     if (HAL_TIM_Base_Init(&m_timer8_handle) != HAL_OK)
     {
         Error_Handler();
     }
-#endif
 
     clk_cfg.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
     if (HAL_TIM_ConfigClockSource(&m_timer8_handle, &clk_cfg) != HAL_OK)
@@ -106,7 +137,7 @@ int timer8_init(void)
     break_deadtime_cfg.OffStateRunMode  = TIM_OSSR_DISABLE;
     break_deadtime_cfg.OffStateIDLEMode = TIM_OSSI_DISABLE;
     break_deadtime_cfg.LockLevel        = TIM_LOCKLEVEL_OFF;
-    break_deadtime_cfg.DeadTime         = 100;                  //死区延时
+    break_deadtime_cfg.DeadTime         = 20;                  //死区延时
     break_deadtime_cfg.BreakState       = TIM_BREAK_DISABLE;
     break_deadtime_cfg.BreakPolarity    = TIM_BREAKPOLARITY_HIGH;
     break_deadtime_cfg.AutomaticOutput  = TIM_AUTOMATICOUTPUT_DISABLE;
@@ -156,7 +187,23 @@ void TIM8_UP_IRQHandler(void)
     //自定义
 }
 
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if(htim->Instance == TIM8)  // 20K 的中断频率
+    {
+        g_tim8_50us_ticks++;
 
+        zero_ctr_loop();        //无感控制逻辑
+    }
+}
+
+/**
+ * @brief 设置uvw三相PWM占空比
+ * 
+ * @param u 0 ~ PWM_PERIOD
+ * @param v 0 ~ PWM_PERIOD
+ * @param w 0 ~ PWM_PERIOD
+ */
 void phase_pwm_set(uint32_t u, uint32_t v, uint32_t w)
 {
     __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_1, u);
@@ -166,24 +213,156 @@ void phase_pwm_set(uint32_t u, uint32_t v, uint32_t w)
 
 void phase_pwm_start(void)
 {
-    HAL_TIM_Base_Start(&m_timer8_handle);
+    HAL_TIM_Base_Start_IT(&m_timer8_handle);    //开启定时器以及中断
+//    HAL_TIM_Base_Start(&m_timer8_handle);     //开启定时器不开中断
 
+#ifdef SIX_STEPS_ENABLE     //六步换相驱动
+    HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_3);
+#else
     HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_2);
     HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_3);
     HAL_TIMEx_PWMN_Start(&m_timer8_handle, TIM_CHANNEL_1);
     HAL_TIMEx_PWMN_Start(&m_timer8_handle, TIM_CHANNEL_2);
     HAL_TIMEx_PWMN_Start(&m_timer8_handle, TIM_CHANNEL_3);
+#endif
+    
 }
 
 void phase_pwm_stop(void)
 {
     HAL_TIM_Base_Stop(&m_timer8_handle);
 
+#ifdef SIX_STEPS_ENABLE     //六步换相驱动
+    HAL_TIM_PWM_Stop(&m_timer8_handle, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Stop(&m_timer8_handle, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Stop(&m_timer8_handle, TIM_CHANNEL_3);
+#else
     HAL_TIM_PWM_Stop(&m_timer8_handle, TIM_CHANNEL_1);
     HAL_TIM_PWM_Stop(&m_timer8_handle, TIM_CHANNEL_2);
     HAL_TIM_PWM_Stop(&m_timer8_handle, TIM_CHANNEL_3);
     HAL_TIMEx_PWMN_Stop(&m_timer8_handle, TIM_CHANNEL_1);
     HAL_TIMEx_PWMN_Stop(&m_timer8_handle, TIM_CHANNEL_2);
     HAL_TIMEx_PWMN_Stop(&m_timer8_handle, TIM_CHANNEL_3); 
+#endif
+    
+}
+
+
+/**
+ * 六步换相API
+ * 
+ */
+void motor_stop(void)
+{
+    phase_pwm_stop();
+
+    phase_pwm_set(0, 0, 0);
+
+    gpio_output_set(PWM_UL_PORT, PWM_UL_PIN, 0);
+    gpio_output_set(PWM_VL_PORT, PWM_VL_PIN, 0);
+    gpio_output_set(PWM_WL_PORT, PWM_WL_PIN, 0);
+}
+
+void motor_start(void)
+{
+    phase_pwm_start();
+}
+
+/**
+  * @brief  U相上桥臂导通，V相下桥臂导通
+  * @param  无
+  * @retval 无
+  */
+void motor_uhvl(void)
+{
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_1, g_bldc_motor.pwm_duty);
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_2, 0);
+	__HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_3, 0);
+    
+    HAL_GPIO_WritePin(PWM_VL_PORT, PWM_VL_PIN, GPIO_PIN_SET);     /* V相下桥臂导通 */
+    HAL_GPIO_WritePin(PWM_UL_PORT, PWM_UL_PIN, GPIO_PIN_RESET);   /* U相下桥臂关闭 */
+    HAL_GPIO_WritePin(PWM_WL_PORT, PWM_WL_PIN, GPIO_PIN_RESET);   /* W相下桥臂关闭 */
+}
+
+/**
+  * @brief  U相上桥臂导通，W相下桥臂导通
+  * @param  无
+  * @retval 无
+  */
+void motor_uhwl(void)
+{
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_1, g_bldc_motor.pwm_duty);
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_2, 0);
+	__HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_3, 0);
+    
+    HAL_GPIO_WritePin(PWM_WL_PORT, PWM_WL_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(PWM_UL_PORT, PWM_UL_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(PWM_VL_PORT, PWM_VL_PIN, GPIO_PIN_RESET);
+}
+
+/**
+  * @brief  V相上桥臂导通，W相下桥臂导通
+  * @param  无
+  * @retval 无
+  */
+void motor_vhwl(void)
+{
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_2, g_bldc_motor.pwm_duty);
+	__HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_3, 0);
+    
+    HAL_GPIO_WritePin(PWM_WL_PORT, PWM_WL_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(PWM_UL_PORT, PWM_UL_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(PWM_VL_PORT, PWM_VL_PIN, GPIO_PIN_RESET);
+}
+
+/**
+  * @brief  V相上桥臂导通，U相下桥臂导通
+  * @param  无
+  * @retval 无
+  */
+void motor_vhul(void)
+{
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_2, g_bldc_motor.pwm_duty);
+	__HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_3, 0);
+    
+    HAL_GPIO_WritePin(PWM_UL_PORT, PWM_UL_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(PWM_VL_PORT, PWM_VL_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(PWM_WL_PORT, PWM_WL_PIN, GPIO_PIN_RESET);
+}
+
+/**
+  * @brief  W相上桥臂导通，U相下桥臂导通
+  * @param  无
+  * @retval 无
+  */
+void motor_whul(void)
+{
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_2, 0);
+	__HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_3, g_bldc_motor.pwm_duty);
+
+    HAL_GPIO_WritePin(PWM_UL_PORT, PWM_UL_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(PWM_VL_PORT, PWM_VL_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(PWM_WL_PORT, PWM_WL_PIN, GPIO_PIN_RESET);
+}
+
+/**
+  * @brief  W相上桥臂导通，V相下桥臂导通
+  * @param  无
+  * @retval 无
+  */
+void motor_whvl(void)
+{
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_2, 0);
+	__HAL_TIM_SetCompare(&m_timer8_handle, TIM_CHANNEL_3, g_bldc_motor.pwm_duty);
+
+    HAL_GPIO_WritePin(PWM_VL_PORT, PWM_VL_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(PWM_UL_PORT, PWM_UL_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(PWM_WL_PORT, PWM_WL_PIN, GPIO_PIN_RESET);
 }

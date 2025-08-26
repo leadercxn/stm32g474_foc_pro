@@ -10,7 +10,7 @@ OPT = -O3 -g3
 
 # Build path
 BUILD_DIR = build
-SDK_DIR   = ../dh_sdk
+SDK_DIR   = ../../dh_sdk
 
 #######################################
 # binaries
@@ -56,6 +56,7 @@ C_DEFS =  			\
 -DSTM32G474xx		\
 -DTRACE_ENABLE		\
 -DTRACE_LEVEL=7		\
+-DSIX_STEPS_ENABLE	\
 
 
 # AS includes
@@ -64,7 +65,7 @@ AS_INCLUDES =
 # C includes
 C_INCLUDES =  		\
 -I user		 		\
--I user/inc 		\
+-I user/st_inc 		\
 -I $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Inc 			\
 -I $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Inc/Legacy 	\
 -I $(SDK_DIR)/platform/stm32/stm32g4/CMSIS/Device/ST/STM32G4xx/Include 	\
@@ -73,18 +74,20 @@ C_INCLUDES =  		\
 -I $(SDK_DIR)/components/app_timer			\
 -I $(SDK_DIR)/components/app_scheduler		\
 -I $(SDK_DIR)/components/app_fifo			\
--I $(SDK_DIR)/components/lib_err			\
 -I $(SDK_DIR)/components/util				\
 -I $(SDK_DIR)/components/trace				\
 -I peripherals								\
 -I bsp										\
 -I peripherals								\
+-I user/tasks 								\
+-I user/sdk_r 								\
+-I user/src									\
 
 # C sources
 C_SOURCES =  	\
 user/main.c 	\
-user/src/stm32g4xx_it.c 		\
-user/src/stm32g4xx_hal_msp.c 	\
+user/st_src/stm32g4xx_it.c 		\
+user/st_src/stm32g4xx_hal_msp.c 	\
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_pwr_ex.c \
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_tim.c \
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_tim_ex.c \
@@ -107,9 +110,9 @@ $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc_ex.
 $(SDK_DIR)/components/app_scheduler/app_scheduler.c				\
 $(SDK_DIR)/components/app_fifo/app_fifo.c						\
 $(SDK_DIR)/components/trace/trace.c								\
-user/src/system_stm32g4xx.c 		\
-user/src/sysmem.c 		\
-user/src/syscalls.c  	\
+user/st_src/system_stm32g4xx.c 		\
+user/st_src/sysmem.c 		\
+user/st_src/syscalls.c  	\
 peripherals/mid_timer.c \
 peripherals/uart.c		\
 peripherals/gpio.c		\
@@ -119,6 +122,12 @@ peripherals/retarget.c	\
 peripherals/timer.c		\
 peripherals/adc.c		\
 user/parameters.c		\
+user/tasks/sensors_task.c		\
+user/tasks/motor_ctrl_task.c	\
+user/src/foc.c					\
+user/src/clark.c				\
+user/src/park.c					\
+user/src/six_steps.c			\
 
 # ASM sources
 ASM_SOURCES =  \
@@ -154,7 +163,8 @@ LDSCRIPT = STM32G474XX_FLASH.ld
 # libraries
 LIBS = -lc -lm -lnosys 
 LIBDIR = 
-LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+#LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LDFLAGS = $(MCU) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin flash_app_jlink erase_jlink reset_jlink

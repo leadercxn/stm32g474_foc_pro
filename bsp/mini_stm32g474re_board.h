@@ -24,19 +24,19 @@
 #define TEST_IO_PIN                 GPIO_PIN_1
 
 #define PWM_UH_PORT                 GPIOC
-#define PWM_UH_PIN                  GPIO_PIN_6
+#define PWM_UH_PIN                  GPIO_PIN_6  //UH
 #define PWM_UL_PORT                 GPIOC
-#define PWM_UL_PIN                  GPIO_PIN_10
+#define PWM_UL_PIN                  GPIO_PIN_10 //UL
 
 #define PWM_VH_PORT                 GPIOC
-#define PWM_VH_PIN                  GPIO_PIN_7
+#define PWM_VH_PIN                  GPIO_PIN_7  //VH
 #define PWM_VL_PORT                 GPIOC
-#define PWM_VL_PIN                  GPIO_PIN_11
+#define PWM_VL_PIN                  GPIO_PIN_11 //VL
 
 #define PWM_WH_PORT                 GPIOC
-#define PWM_WH_PIN                  GPIO_PIN_8
+#define PWM_WH_PIN                  GPIO_PIN_8  //WH
 #define PWM_WL_PORT                 GPIOC
-#define PWM_WL_PIN                  GPIO_PIN_12
+#define PWM_WL_PIN                  GPIO_PIN_12 //WL
 
 #define PWM_CH4_PORT                GPIOC
 #define PWM_CH4_PIN                 GPIO_PIN_9
@@ -57,7 +57,10 @@
 #define ADC_VBUS_PORT               GPIOB
 #define ADC_VBUS_PIN                GPIO_PIN_15 //adc2-IN15
 #define ADC_TEMP_PORT               GPIOA
-#define ADC_TEMP_PIN                GPIO_PIN_4 //adc2-IN17
+#define ADC_TEMP_PIN                GPIO_PIN_4  //adc2-IN17
+
+#define PWM_EN_PORT                 GPIOA
+#define PWM_EN_PIN                  GPIO_PIN_3
 
 #endif
 

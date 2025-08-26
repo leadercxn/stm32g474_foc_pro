@@ -1,5 +1,7 @@
+#include "string.h"
 #include "boards.h"
 #include "adc.h"
+#include "math.h"
 #include "parameters.h"
 
 #include "trace.h"
@@ -9,11 +11,11 @@ extern void Error_Handler(void);
 static ADC_HandleTypeDef m_adc2_handle;
 static DMA_HandleTypeDef m_dma_adc2_handle;
 
-static uint16_t adc_sample_data[8] = {0};
-
+/**
+ * adc2初始化函数
+ */
 int adc_init(void)
 {
-    ADC_MultiModeTypeDef        multimode = {0};
     ADC_ChannelConfTypeDef      channle_cfg = {0};
 
     m_adc2_handle.Instance                      = ADC2;
@@ -39,6 +41,8 @@ int adc_init(void)
     }
 
 #if 0
+    ADC_MultiModeTypeDef        multimode = {0};
+
     multimode.Mode = ADC_MODE_INDEPENDENT;
     if (HAL_ADCEx_MultiModeConfigChannel(&m_adc2_handle, &multimode) != HAL_OK)
     {
@@ -113,7 +117,6 @@ int adc_init(void)
 }
 
 void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
-//void dma_adc2_init(ADC_HandleTypeDef* adcHandle)
 {
   GPIO_InitTypeDef          gpio_init_struct = {0};
   RCC_PeriphCLKInitTypeDef  periph_clk_init = {0};
@@ -167,12 +170,22 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
 
     __HAL_LINKDMA(adcHandle, DMA_Handle, m_dma_adc2_handle);
 
-//    HAL_NVIC_SetPriority(ADC1_2_IRQn, 2, 0);
-//    HAL_NVIC_EnableIRQ(ADC1_2_IRQn);
+    HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 2, 0);                        /* 设置DMA中断优先级为2，子优先级为0 */
+    HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);    
   }
 }
 
-void adc_start(void)
+/**
+ * @brief       ADC DMA采集中断服务函数
+ * @param       无
+ * @retval      无
+ */
+void DMA1_Channel1_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&m_dma_adc2_handle);
+}
+
+void adc_start(uint32_t *p_dma_adc_rx_data)
 {
     static bool calibration_done = false;
     int err_code = 0;
@@ -186,12 +199,12 @@ void adc_start(void)
         }
     }
 
-    HAL_ADC_Start_DMA(&m_adc2_handle, (uint32_t *)adc_sample_data, 8);      //用于ADC1规则通道DMA传输
+    HAL_ADC_Start_DMA(&m_adc2_handle, p_dma_adc_rx_data, ADC_TOTAL_COLLECT_NUM);      //用于ADC1规则通道DMA传输
 }
 
-uint16_t adc_sample_data_get(adc_channel_e ch)
+void adc_stop(void)
 {
-    return  adc_sample_data[ch];
+    HAL_ADC_Stop_DMA(&m_adc2_handle);      //停止DMA传输
 }
 
 
