@@ -56,7 +56,9 @@ C_DEFS =  			\
 -DSTM32G474xx		\
 -DTRACE_ENABLE		\
 -DTRACE_LEVEL=7		\
--DSIX_STEPS_ENABLE	\
+
+# 六步换相启动控制宏
+#-DSIX_STEPS_ENABLE	\
 
 
 # AS includes
@@ -223,6 +225,12 @@ $(BUILD_DIR)/$(TARGET)_app.jlink: $(BUILD_DIR)/$(TARGET).hex
 # 烧录app
 flash:
 	JLink -commandfile $(BUILD_DIR)/$(TARGET)_app.jlink
+
+erase:
+	JLink -commandfile $(BUILD_DIR)/erase.jlink
+
+reset:
+	JLink -commandfile $(BUILD_DIR)/reset.jlink
 
 # 擦除
 $(BUILD_DIR)/erase.jlink:

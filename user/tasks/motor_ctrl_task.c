@@ -15,7 +15,9 @@
 #include "trace.h"
 
 #define MOTOR_VELOCITY_ACC  0.01f    //电机速度加速度
-#define MOTOR_VELOCITY_MAX  3000.0f  //电机速度上限   
+#define MOTOR_VELOCITY_MAX  250.0f  //电机速度上限
+
+#define FIRST_STEPS_TIMES   60    //无感启动初始固定相时间
 
 typedef struct
 {
@@ -48,6 +50,11 @@ int motor_ctrl_task(void)
     static uint8_t  motor_acc_stats = 0;        //加速状态 0：加速中 1：加速完成 2：恒速转动
     static uint32_t motor_acc_total_times = 0;  //加速总时间 1 = 50us
 
+    //参考六步换相时间
+    static uint32_t motor_acc_cnt = 0;                          //电机加速次数计数
+    static uint32_t motor_acc_ticks_delta = 0;                  //电机加速时间间隔
+    static uint32_t per_acc_hold_ticks = FIRST_STEPS_TIMES;     //电机加速时间间隔时间戳
+
     // 串口控制电机
 #if 1
     uart_cmd_t usart1_rx_data;
@@ -63,8 +70,10 @@ int motor_ctrl_task(void)
         {
             g_app_param.motor_sta = MOTOR_STA_STOPPING;
 
+#ifdef SIX_STEPS_ENABLE     //六步换相驱动
             g_bldc_motor.run_flag = 0;
             motor_stop();
+#endif
 
             trace_debug("motor stop\r\n");
         }
@@ -72,8 +81,10 @@ int motor_ctrl_task(void)
         {
             g_app_param.motor_sta = MOTOR_STA_STARTING;
 
+#ifdef SIX_STEPS_ENABLE     //六步换相驱动
             g_bldc_motor.run_flag = 1;
             motor_start();
+#endif
 
             trace_debug("motor start\r\n");
         }
@@ -113,7 +124,7 @@ int motor_ctrl_task(void)
     switch(g_app_param.motor_sta)
     {
         case MOTOR_STA_STOP:
-
+            motor_starting_ticks = sys_time_ms_get();
             break;
 
         case MOTOR_STA_STOPPING:
@@ -121,6 +132,11 @@ int motor_ctrl_task(void)
 
             torque_set(0.0f, 0.0f, 0); // 停止时，电压为0
 
+            motor_starting_ticks = sys_time_ms_get();
+            motor_acc_stats = 0;
+            motor_acc_ticks_delta = 0;
+            motor_acc_cnt = 0;
+            per_acc_hold_ticks = FIRST_STEPS_TIMES;
             shaft_angle = 0;
             break;
 
@@ -156,9 +172,9 @@ int motor_ctrl_task(void)
 
                 shaft_angle = radian_normalize(shaft_angle + motor_vel * tim8_50us_delta);
 
-                uq = 0.6f + motor_vel * 0.001;
+                uq = 0.3f + motor_vel * 0.001;
 
-                CONSTRAIN(uq, 0.0f, 10.0f);
+                uq = CONSTRAIN(uq, 0.1f, 4.0f);
 
                 torque_set(uq, 0, shaft_angle);
 
@@ -185,9 +201,9 @@ int motor_ctrl_task(void)
 
                 shaft_angle = radian_normalize(shaft_angle + motor_vel * tim8_50us_delta);
 
-                uq = 0.6f + motor_vel * 0.006;
+                uq = 0.3f + motor_vel * 0.001;
 
-                CONSTRAIN(uq, 0.0f, 10.0f);
+                uq = CONSTRAIN(uq, 0.3f, 4.0f);
 
                 torque_set(uq, 0, shaft_angle);
 
@@ -212,6 +228,69 @@ int motor_ctrl_task(void)
                 torque_set(g_app_param.uq, 0, shaft_angle);
 
                 motor_starting_ticks = sys_time_ms_get();
+            }
+#endif
+
+/**
+ * 参考六步换相时间进行加速
+ */
+#if 1
+            if(IS_PRE_MINUS_MID_OVER_POST(sys_time_ms_get(), motor_starting_ticks,  1))      //间隔
+            {
+                motor_starting_ticks_delta = sys_time_ms_get() - motor_starting_ticks;      //计算时间间隔
+                motor_starting_ticks = sys_time_ms_get();
+
+                if(motor_acc_stats == 0)      //加速未完成
+                {
+                    motor_acc_ticks_delta += motor_starting_ticks_delta;
+                    if(motor_acc_ticks_delta > per_acc_hold_ticks)                          //进行一次加速
+                    {
+                        motor_acc_cnt++;
+
+                        per_acc_hold_ticks -= per_acc_hold_ticks / 12;                      //加速时间间隔逐渐变短
+                        if(per_acc_hold_ticks < 13)
+                        {
+                            per_acc_hold_ticks = 12;                                         //加速时间间隔下限
+
+                            motor_acc_stats = 1;                                             //加速完成
+                        }
+
+                        motor_acc_ticks_delta = 0;
+
+                        shaft_angle += PI_DIV_3;                                            //每次加速，电机转动60度
+                        shaft_angle = radian_normalize(shaft_angle);
+                    }
+
+                    uq = 0.5f + motor_acc_cnt * 0.036f;
+                    uq = CONSTRAIN(uq, 0.1f, 3.0f);
+
+                    torque_set(uq, 0, shaft_angle);
+                }
+                else if(motor_acc_stats == 1) //加速已完成，切换到恒速
+                {
+                    uq = 0.5f + motor_acc_cnt * 0.036f;
+                    uq = CONSTRAIN(uq, 0.1f, 3.0f);
+
+                    trace_debug("motor acc done, total cnts %lu, uq = %.3f\r\n", motor_acc_cnt, uq);
+
+                    motor_acc_stats = 2;
+                }
+                if(motor_acc_stats == 2)      //恒速运行
+                {
+                    motor_acc_ticks_delta += motor_starting_ticks_delta;
+                    if(motor_acc_ticks_delta > per_acc_hold_ticks)      //进行一次角度调整
+                    {
+                        motor_acc_ticks_delta = 0;
+
+                        shaft_angle += PI_DIV_3;                        // 1ms 转 6°
+                        shaft_angle = radian_normalize(shaft_angle);
+                    }
+
+                    uq = 0.5f + motor_acc_cnt * 0.036f;
+                    uq = CONSTRAIN(uq, 0.1f, 3.0f);
+
+                    torque_set(uq, 0, shaft_angle);
+                }
             }
 #endif
 

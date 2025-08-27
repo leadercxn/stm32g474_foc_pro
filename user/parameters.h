@@ -43,16 +43,16 @@ typedef enum
 
 /***************************************** 电机状态结构体 ***********************************************/
 typedef struct {
-    __IO uint8_t    run_flag;       //运行标志  0- 停止  1- 运行
-    __IO uint8_t    locked_rotor;   //堵转标记  0- 否    1-堵转
-    __IO uint8_t    dir;            //电机旋转方向   0顺时针 1逆时针
-    __IO int32_t    pos;            /* 电机位置 */
-    __IO int32_t    speed;          /* 电机速度 */
-    __IO int16_t    current;        /* 电机速度 */
-    __IO uint16_t   pwm_duty;       /* 电机占空比 */
-    __IO uint32_t   lock_time;      /* 电机堵转时间 */
-    __IO uint32_t   no_single;
-    __IO uint32_t   count_j;
+    uint8_t    run_flag;       //运行标志  0- 停止  1- 运行
+    uint8_t    locked_rotor;   //堵转标记  0- 否    1-堵转
+    uint8_t    dir;            //电机旋转方向   0顺时针 1逆时针
+    int32_t    pos;            /* 电机位置 */
+    int32_t    speed;          /* 电机速度 */
+    int16_t    current;        /* 电机速度 */
+    uint16_t   pwm_duty;       /* 电机占空比 */
+    uint32_t   lock_time;      /* 电机堵转时间 */
+    uint32_t   no_single;
+    uint32_t   count_j;
 } bldc_obj_t;
 
 // 全局应用参数

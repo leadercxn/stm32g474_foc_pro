@@ -2,6 +2,7 @@
 #include "timer.h"
 #include "parameters.h"
 
+#include "gpio.h"
 #include "trace.h"
 #include "six_steps.h"
 
@@ -193,7 +194,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
         g_tim8_50us_ticks++;
 
+#ifdef SIX_STEPS_ENABLE     //六步换相驱动
         zero_ctr_loop();        //无感控制逻辑
+#endif
+
     }
 }
 
@@ -366,3 +370,4 @@ void motor_whvl(void)
     HAL_GPIO_WritePin(PWM_UL_PORT, PWM_UL_PIN, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(PWM_WL_PORT, PWM_WL_PIN, GPIO_PIN_RESET);
 }
+
