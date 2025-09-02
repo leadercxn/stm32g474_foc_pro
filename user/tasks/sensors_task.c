@@ -15,7 +15,7 @@
 
 static uint16_t adc_sample_origin_data[ADC_TOTAL_COLLECT_NUM] = {0};    //adc采样原始数据，8通道扫描20次
 static uint16_t adc_sample_average_data[ADC_CHAN_NUM] = {0};            //adc采样平均数据，8通道
-static float    adc_sample_physical_value[ADC_CHAN_NUM] = {0};          //adc采样物理量数据，8通道, 电压单位V, 电流单位mA, 温度单位℃
+static float    adc_sample_physical_value[ADC_CHAN_NUM] = {0};          //adc采样物理量数据，8通道, 电压单位V, 电流单位A, 温度单位℃
 
 static uint16_t adc_quiescent_i_offset_data[3] = {0};                   //电流偏移adc采样数据 u,v,w
 
@@ -97,6 +97,9 @@ static float temp_get(uint16_t adc_value)
  */
 static void adc_average_data_to_physical_value(void)
 {
+    int16_t temp;
+    float   result = 0.0f;
+
     // U_VOLT
     adc_sample_physical_value[ADC_CH_U_VOLT] = (float) (adc_sample_average_data[ADC_CH_U_VOLT] * 3.30 * 25.0 / 4096.0f);
 
@@ -106,20 +109,56 @@ static void adc_average_data_to_physical_value(void)
     // W_VOLT
     adc_sample_physical_value[ADC_CH_W_VOLT] = (float) (adc_sample_average_data[ADC_CH_W_VOLT] * 3.30 * 25.0 / 4096.0f);
 
-    // U_I
-    adc_sample_physical_value[ADC_CH_U_I] = (float) (((adc_sample_average_data[ADC_CH_U_I] - adc_quiescent_i_offset_data[0]) * 3.30 / 4.096f) / 0.12f);
-
-    // V_I
-    adc_sample_physical_value[ADC_CH_V_I] = (float) (((adc_sample_average_data[ADC_CH_V_I] - adc_quiescent_i_offset_data[1])* 3.30 / 4.096f) / 0.12f);
-
-    // W_I
-    adc_sample_physical_value[ADC_CH_W_I] = (float) (((adc_sample_average_data[ADC_CH_W_I] - adc_quiescent_i_offset_data[2])* 3.30 / 4.096f) / 0.12f);
-
     // VBUS
     adc_sample_physical_value[ADC_CH_VBUS] = (float) (adc_sample_average_data[ADC_CH_VBUS] * 3.30 * 25.0 / 4096.0f);
 
     // TEMP
     adc_sample_physical_value[ADC_CH_TEMP] = temp_get(adc_sample_average_data[ADC_CH_TEMP]);
+
+    // U_I
+    temp = adc_sample_average_data[ADC_CH_U_I] - adc_quiescent_i_offset_data[0];
+    if(temp >= 0)
+    {
+        result = temp * (float)(3.3f / 4.096f / 0.12f);
+
+        result *= 0.001f;  //转换为A
+
+        FIRST_ORDER_LPF(adc_sample_physical_value[ADC_CH_U_I], result, 0.1f);
+    }
+    else
+    {
+        adc_sample_physical_value[ADC_CH_U_I] = 0.0f;
+    }
+
+    // V_I
+    temp = adc_sample_average_data[ADC_CH_V_I] - adc_quiescent_i_offset_data[1];
+    if(temp >= 0)
+    {
+        result = temp * (float)(3.3f / 4.096f / 0.12f);
+
+        result *= 0.001f;  //转换为A
+
+        FIRST_ORDER_LPF(adc_sample_physical_value[ADC_CH_V_I], result, 0.1f);
+    }
+    else
+    {
+        adc_sample_physical_value[ADC_CH_V_I] = 0.0f;
+    }
+
+    // W_I
+    temp = adc_sample_average_data[ADC_CH_W_I] - adc_quiescent_i_offset_data[2];
+    if(temp >= 0)
+    {
+        result = temp * (float)(3.3f / 4.096f / 0.12f);
+
+        result *= 0.001f;  //转换为A
+
+        FIRST_ORDER_LPF(adc_sample_physical_value[ADC_CH_W_I], result, 0.1f);
+    }
+    else
+    {
+        adc_sample_physical_value[ADC_CH_W_I] = 0.0f;
+    }
 }
 
 /**
@@ -147,7 +186,7 @@ int sensors_task(void)
         quiescent_i_cal_ticks = sys_time_ms_get();
         if(g_app_param.motor_sta == MOTOR_STA_STOP)     //电机处于停止状态
         {
-            uint32_t quiescent_i_adc_avg[3] = {0};      //静态电流平均值
+            uint32_t quiescent_i_adc_avg[3] = {0};      //静态电流平均值U,V,W
             
             quiescent_i_adc_buff[0][quiescent_i_samp_index] = adc_sample_data_get(ADC_CH_U_I);
             quiescent_i_adc_buff[1][quiescent_i_samp_index] = adc_sample_data_get(ADC_CH_V_I);

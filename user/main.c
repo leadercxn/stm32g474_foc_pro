@@ -21,6 +21,17 @@
 
 #include "foc.h"
 
+_RAM_FUNC void ramfunc_test(void)
+{
+    float pi_val = 3.1415926f;
+    float cos_val = cosf(pi_val / 3);
+
+    float result = pi_val * cos_val;
+    float result1 = sqrtf(3.0f);
+
+    trace_debug("ramfunc test, result %.5f, result1 %.5f\r\n", result, result1);
+}
+
 int main(void)
 {
   bool led_stat = false;
@@ -45,7 +56,8 @@ int main(void)
 
   trace_info("STM32G474 Pro Start \r\n\r\n")
 
-//  trace_debug("cosf %f, sinf %f, sqrtf %f\r\n", cosf(PI/3), sinf(PI/3), sqrtf(3.0f));
+
+  ramfunc_test();   //ramfunc 测试
 
   while (1)
   {
@@ -74,28 +86,36 @@ int main(void)
         adc_sample_data_get(ADC_CH_VBUS), adc_sample_data_get(ADC_CH_TEMP));
 #endif
 
-#if 1
-        trace_debug("UV %.2fV, VV %.2fV, WV %.2fV, UI %.2fmA, VI %.2fmA, WI %.2fmA, VBUS %.1fV, T %.1fC \r\n", \
+#if 0
+        trace_debug("UV %.2fV, VV %.2fV, WV %.2fV, UI %.4fA, VI %.4fA, WI %.4fA, VBUS %.1fV, T %.1fC \r\n", \
         adc_sample_physical_value_get(ADC_CH_U_VOLT), adc_sample_physical_value_get(ADC_CH_V_VOLT), \
         adc_sample_physical_value_get(ADC_CH_W_VOLT), adc_sample_physical_value_get(ADC_CH_U_I), \
         adc_sample_physical_value_get(ADC_CH_V_I), adc_sample_physical_value_get(ADC_CH_W_I),   \
         adc_sample_physical_value_get(ADC_CH_VBUS), adc_sample_physical_value_get(ADC_CH_TEMP));
+
+        trace_debug("motor real speed = %d\r\n", g_app_param.motor_speed_real);
 #endif
 
 #if 0
         svpwm_set(15.0, 10.0, 5.0);
 #endif
 
-#if 0
-        static float pos_radian = PI / 4.0f;
-        float uq = 12.0f;  //q轴电压
-
-        torque_set(uq, 0, pos_radian);
-
-        pos_radian += PI_DIV_3;
-#endif
-
       }
+
+//vofa 打印三相电压，电流
+#if 0
+      uint32_t vofa_send_ticks = 0;
+
+      if(sys_time_ms_get() - vofa_send_ticks >= 10)
+      {
+          vofa_send_ticks = sys_time_ms_get();
+
+          VOFA_PRINTF("%.2f, %.2f, %.2f, %.4f, %.4f, %.4f\n", adc_sample_physical_value_get(ADC_CH_U_VOLT), \
+                 adc_sample_physical_value_get(ADC_CH_V_VOLT), adc_sample_physical_value_get(ADC_CH_W_VOLT), \
+                 adc_sample_physical_value_get(ADC_CH_U_I), adc_sample_physical_value_get(ADC_CH_V_I),     \
+                 adc_sample_physical_value_get(ADC_CH_W_I));
+      }
+#endif
 
       sensors_task();         //传感器任务
 

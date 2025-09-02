@@ -1,3 +1,8 @@
+/**
+ * @file        six_steps.c
+ * @brief       无感六步换相驱动，改自正点原子的六步驱动程序
+ */
+
 #include "six_steps.h"
 
 #include "boards.h"

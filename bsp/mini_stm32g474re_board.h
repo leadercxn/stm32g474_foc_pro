@@ -5,6 +5,8 @@
 #include "stdbool.h"
 #include "stm32g4xx_hal.h"
 
+#define _RAM_FUNC                   __attribute__ ((section (".ramfunc")))
+
 #define MACHINE_NAME                "MINI_STM32G474RE"
 
 #define USART1_TX_PORT              GPIOA

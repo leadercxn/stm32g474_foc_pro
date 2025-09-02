@@ -5,13 +5,13 @@
 
 #include "boards.h"
 #include "foc.h"
+#include "smo_pll.h"
+#include "pid.h"
 
 #define SYS_CLK_FREQ    170000000
 #define PWM_FREQ        20000       //20K
 #define PWM_PERIOD      8500        //(SYS_CLK_FREQ / PWM_FREQ)
 #define MAX_PWM_DUTY    ((PWM_PERIOD - 1) * 0.96)  //最大占空比
-//#define PWM_PERIOD      9444        //170000000 / 18000 = 9444
-//#define PWM_PERIOD      4722        //170000000 / 36000 = 4722
 
 
 #define MOTOR_POLE_PAIR 2           //电机极对数
@@ -22,7 +22,12 @@
 #define MOTOR_SPEED_MIN_RPM   10  //电机最小速度
 
 #define MOTOR_UQ_MAX    240         //电机q轴电压最大值，单位0.1V
-#define VBUS_VLOT       24.0f
+#define VBUS_VLOT       24.0f       //母线电压，单位V
+#define MOTOR_I_MAX     19.80f      //电机最大电流，单位A
+
+#define FIRST_ORDER_LPF(OUT, IN, FAC)  OUT = (1.0f - FAC) * OUT + FAC * IN;  /*一阶滤波 */
+
+#define VOFA_PRINTF     printf      //配合vofa上位机使用
 
 // 电机状态
 typedef enum
@@ -61,10 +66,11 @@ typedef struct
     motor_sta_e motor_sta;          // 电机状态
     motor_dir_e motor_dir;          // 电机方向
 
-    uint16_t    motor_speed_set;      // 电机设定速度，单位RPM
-    uint16_t    motor_speed_real;     // 电机实际速度，单位RPM
+    uint16_t    motor_speed_set;    // 电机设定速度，单位RPM
+    uint16_t    motor_speed_real;   // 电机实际速度，单位RPM
 
-    float       uq;     // q轴电压
+    float       uq;                 // q轴电压 单位V
+    float       iq;                 // q轴电流 单位A
 
     foc_param_t foc_i;  // 电机foc i电流值
     foc_param_t foc_u;  // 电机foc u电压值
@@ -73,5 +79,10 @@ typedef struct
 extern app_param_t g_app_param;
 extern bldc_obj_t  g_bldc_motor;
 
+extern smo_pll_t        g_smo_pll;
+extern current_foc_t    g_current_foc;
+
+extern pid_obj_t g_moter_i_loop_pid;
+extern pid_obj_t g_moter_vel_loop_pid;
 
 #endif

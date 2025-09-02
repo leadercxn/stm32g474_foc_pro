@@ -16,19 +16,11 @@
  */
 float radian_normalize(float radian)
 {
-    float temp_radian = radian;
+    float a;
 
-    while(temp_radian < 0.0f)
-    {
-        temp_radian += DOUBLE_PI;
-    }
-
-    while(temp_radian >= DOUBLE_PI)
-    {
-        temp_radian -= DOUBLE_PI;
-    }
-
-    return temp_radian;
+	a = fmod(radian, DOUBLE_PI);
+	
+	return (a >= 0) ? a : (a + DOUBLE_PI);
 }
 
 
@@ -45,6 +37,10 @@ void torque_set(float uq, float ud, float pos_radian)
 
     foc_u.q = uq;  // q轴电压
     foc_u.d = ud;  // d轴电压
+
+    // 记录下当前的uq值到 g_current_foc
+    g_current_foc.uq = uq;
+    g_current_foc.ud = ud;
 
 # if 0
     foc_u.pos_radian = radian_normalize(pos_radian);  // 归一化位置角度

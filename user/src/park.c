@@ -27,3 +27,24 @@ void inv_park_cal(foc_param_t *foc_param)
     foc_param->alpha = foc_param->d * cos_theta - foc_param->q * sin_theta;
     foc_param->beta  = foc_param->d * sin_theta + foc_param->q * cos_theta;
 }
+
+
+void park_cal_param(float alpha, float beta, float pos_radian, float *d, float *q)
+{
+    // Park 变换
+    float cos_theta = cosf(pos_radian);
+    float sin_theta = sinf(pos_radian);
+
+    *d = alpha * cos_theta + beta * sin_theta;
+    *q = beta * cos_theta - alpha * sin_theta;
+}
+
+void inv_park_cal_param(float d, float q, float pos_radian, float *alpha, float *beta)
+{
+    // iPark 变换
+    float cos_theta = cosf(pos_radian);
+    float sin_theta = sinf(pos_radian);
+
+    *alpha = d * cos_theta - q * sin_theta;
+    *beta  = d * sin_theta + q * cos_theta;
+}

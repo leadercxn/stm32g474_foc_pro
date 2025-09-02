@@ -78,6 +78,7 @@ C_INCLUDES =  		\
 -I $(SDK_DIR)/components/app_fifo			\
 -I $(SDK_DIR)/components/util				\
 -I $(SDK_DIR)/components/trace				\
+-I $(SDK_DIR)/components/pid				\
 -I peripherals								\
 -I bsp										\
 -I peripherals								\
@@ -112,24 +113,26 @@ $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc_ex.
 $(SDK_DIR)/components/app_scheduler/app_scheduler.c				\
 $(SDK_DIR)/components/app_fifo/app_fifo.c						\
 $(SDK_DIR)/components/trace/trace.c								\
-user/st_src/system_stm32g4xx.c 		\
-user/st_src/sysmem.c 		\
-user/st_src/syscalls.c  	\
-peripherals/mid_timer.c \
-peripherals/uart.c		\
-peripherals/gpio.c		\
-peripherals/delay.c		\
-peripherals/sys.c		\
-peripherals/retarget.c	\
-peripherals/timer.c		\
-peripherals/adc.c		\
-user/parameters.c		\
+$(SDK_DIR)/components/pid/pid.c									\
+user/st_src/system_stm32g4xx.c 	\
+user/st_src/sysmem.c 			\
+user/st_src/syscalls.c  		\
+peripherals/mid_timer.c 		\
+peripherals/uart.c				\
+peripherals/gpio.c				\
+peripherals/delay.c				\
+peripherals/sys.c				\
+peripherals/retarget.c			\
+peripherals/timer.c				\
+peripherals/adc.c				\
+user/parameters.c				\
 user/tasks/sensors_task.c		\
 user/tasks/motor_ctrl_task.c	\
 user/src/foc.c					\
 user/src/clark.c				\
 user/src/park.c					\
 user/src/six_steps.c			\
+user/src/smo_pll.c 				\
 
 # ASM sources
 ASM_SOURCES =  \
