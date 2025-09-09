@@ -193,7 +193,7 @@ int sensors_task(void)
             quiescent_i_adc_buff[2][quiescent_i_samp_index] = adc_sample_data_get(ADC_CH_W_I);
 
             quiescent_i_samp_index++;
-            if(quiescent_i_samp_index > ADC_I_OFFSET_SAMP_TIMES)                //每50次统计一次静态值
+            if(quiescent_i_samp_index > ADC_I_OFFSET_SAMP_TIMES)                //每50次统计一次静态值 10 * 50
             {
                 quiescent_i_samp_index = 0;                                     //重置采样索引
 

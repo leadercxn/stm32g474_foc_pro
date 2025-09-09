@@ -42,13 +42,13 @@ static void param_init(void)
 
     g_smo_pll.ts_dt = g_app_param.foc_ts;
 
-    g_iq_pi.kp = 1.2f;
-    g_iq_pi.ki = 0.3f;
+    g_iq_pi.kp       = 1.2f;
+    g_iq_pi.ki       = 0.3f;
     g_iq_pi.out_max  = 4.0f;
     g_iq_pi.iout_max = 10.0f;
 
-    g_id_pi.kp = 0.6f;
-    g_id_pi.ki = 0.1f;
+    g_id_pi.kp       = 0.6f;
+    g_id_pi.ki       = 0.1f;
     g_id_pi.out_max  = 4.0f;
     g_id_pi.iout_max = 10.0f;
 
