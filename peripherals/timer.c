@@ -131,6 +131,8 @@ int timer8_init(void)
     {
         Error_Handler();
     }
+
+    oc_cfg.Pulse        = PWM_PERIOD * 2;    // ch4 是作为触发adc采集的信号， 10K的采集频率
     if (HAL_TIM_PWM_ConfigChannel(&m_timer8_handle, &oc_cfg, TIM_CHANNEL_4) != HAL_OK)
     {
         Error_Handler();
@@ -151,6 +153,8 @@ int timer8_init(void)
     
     //pwm gpio
     pwm_io_init();
+
+    HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_4);         //开始adc
 
     return 0;
 }
