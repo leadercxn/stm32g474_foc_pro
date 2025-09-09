@@ -20,22 +20,46 @@
 #include "motor_ctrl_task.h"
 
 #include "foc.h"
+#include "ekf.h"
 
-_RAM_FUNC void ramfunc_test(void)
+static void param_init(void)
 {
-    float pi_val = 3.1415926f;
-    float cos_val = cosf(pi_val / 3);
+    g_app_param.foc_ts    = (float) (1.0f / PWM_FREQ);
+    g_app_param.smo_f     = expf( (- MOTOR_PHASE_RES / MOTOR_PHASE_LS) * g_app_param.foc_ts);
+    g_app_param.smo_g     = (1.0f - g_app_param.smo_f) / MOTOR_PHASE_RES;
+    g_app_param.smo_g    *= (MOTOR_RATED_V * SQRT_3_DIV_3 / MOTOR_RATED_I);   // 额定电压除以额定电流，得到阻抗值, 参考 硕历达的程序
 
-    float result = pi_val * cos_val;
-    float result1 = sqrtf(3.0f);
+    g_app_param.smo_k_slide   = 0.168f;
+    g_app_param.smo_k_slf     = 0.058;
+    g_app_param.smo_i_err_max = 0.5f;
 
-    trace_debug("ramfunc test, result %.5f, result1 %.5f\r\n", result, result1);
+    g_app_param.vel_coeff = (float) ( 1.0f / (g_app_param.foc_ts * VEL_LOOP_EXEC_FREQ) * 60.0f / (MOTOR_POLE_PAIRS * DOUBLE_PI) ); // 速度系数，RPM 转换为 电角度/50us
+
+    g_app_param.ekf_theta = 0.0f;
+
+    trace_debug("foc ts %.5f, smo f %.5f, smo g %.5f, vel_coeff %.4f\r\n", \
+    g_app_param.foc_ts, g_app_param.smo_f, g_app_param.smo_g, g_app_param.vel_coeff);
+
+    g_smo_pll.ts_dt = g_app_param.foc_ts;
+
+    g_iq_pi.kp = 1.2f;
+    g_iq_pi.ki = 0.3f;
+    g_iq_pi.out_max  = 4.0f;
+    g_iq_pi.iout_max = 10.0f;
+
+    g_id_pi.kp = 0.6f;
+    g_id_pi.ki = 0.1f;
+    g_id_pi.out_max  = 4.0f;
+    g_id_pi.iout_max = 10.0f;
+
 }
 
 int main(void)
 {
   bool led_stat = false;
   uint32_t test_inter_ticks = 0;
+
+  float angle = PI * 0.2f;
 
   HAL_Init();
 //sys_stm32_clock_init(85, 2, 2, 4, 8);       /* 设置时钟,170Mhz  正点原子*/
@@ -49,15 +73,14 @@ int main(void)
   timer8_init();    //用于生成PWM，
   adc_init();       //adc2 用于采样电流、电压、温度
 
+  TIMER_INIT();     // 调度定时器初始化，用于简单的ms级定时器调度
+
+  trace_info("STM32G474 FOC Test Start \r\n\r\n")
+
+  param_init();     //参数初始化
+  apt_ekf_init();
+
   phase_pwm_start();
-//  phase_pwm_set( (PWM_PERIOD / 3), (PWM_PERIOD / 4), (PWM_PERIOD / 5));
-
-  TIMER_INIT();   // 调度定时器初始化，用于简单的ms级定时器调度
-
-  trace_info("STM32G474 Pro Start \r\n\r\n")
-
-
-  ramfunc_test();   //ramfunc 测试
 
   while (1)
   {
@@ -96,10 +119,16 @@ int main(void)
         trace_debug("motor real speed = %d\r\n", g_app_param.motor_speed_real);
 #endif
 
+// 测试svpwm
 #if 0
-        svpwm_set(15.0, 10.0, 5.0);
-#endif
+        angle += PI / 3;
 
+        angle = radian_normalize(angle);
+
+        torque_set(2.0f, 0, angle);
+
+        trace_debug("angle %f\r\n", angle);
+#endif
       }
 
 //vofa 打印三相电压，电流
@@ -114,6 +143,18 @@ int main(void)
                  adc_sample_physical_value_get(ADC_CH_V_VOLT), adc_sample_physical_value_get(ADC_CH_W_VOLT), \
                  adc_sample_physical_value_get(ADC_CH_U_I), adc_sample_physical_value_get(ADC_CH_V_I),     \
                  adc_sample_physical_value_get(ADC_CH_W_I));
+      }
+#endif
+
+#if 0
+      uint64_t old_50us_ticks = 0;
+
+      if(g_tim8_50us_ticks - old_50us_ticks > 1000)   //50 ms定时器任务
+      {
+          old_50us_ticks = g_tim8_50us_ticks;
+
+          trace_debug("50us ticks %llu, sys ticks %lu\r\n", g_tim8_50us_ticks, sys_time_ms_get());
+
       }
 #endif
 

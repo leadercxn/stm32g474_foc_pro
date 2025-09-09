@@ -16,12 +16,16 @@ bldc_obj_t g_bldc_motor = {
 app_param_t g_app_param = {
     .motor_sta = MOTOR_STA_STOP,
     .motor_dir = MOTOR_DIR_CW,
+    .motor_start_acc_sta = MOTOR_START_STA_ACC,
 
     .motor_speed_set    = 60,
     .motor_speed_real   = 0,
 
-    .uq = 4.0f,
-    .iq = 1.0f,
+    .target_uq = 4.0f,
+    .target_iq = 1.0f,
+
+    .curr_uq = 0.0f,
+    .curr_theta = 0.0f,
 };
 
 smo_pll_t g_smo_pll = {
@@ -55,3 +59,8 @@ pid_obj_t g_moter_vel_loop_pid = {
     .max_out  = MOTOR_I_MAX * 0.5f * 0.3f,   //速度环的输出是电流值, 是电流环的输入
     .max_iout = 200.0f,
 };
+
+
+// ekf pi控制器
+pi_cal_t g_iq_pi;
+pi_cal_t g_id_pi;

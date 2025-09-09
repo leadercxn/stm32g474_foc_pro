@@ -10,20 +10,20 @@ typedef struct {
 
 typedef struct 
 {
-    float rs;               //电机相电阻
-    float ls;               //电机相电感
+    float rs;                   //电机相电阻
+    float ls;                   //电机相电感
 
-    float u_alpha;          //Uα alpha轴电压
-    float u_beta;           //Uβ beta轴电压
+    float u_alpha;              //Uα alpha轴电压
+    float u_beta;               //Uβ beta轴电压
 
-    float i_alpha;          //Iα alpha轴实际电流
-    float i_beta;           //Iβ beta轴实际电流
+    float i_alpha;              //Iα alpha轴实际电流
+    float i_beta;               //Iβ beta轴实际电流
 
-    float est_i_alpha;      //估算的Iα
-    float est_i_beta;       //估算的Iβ
+    float est_i_alpha;          //估算的Iα
+    float est_i_beta;           //估算的Iβ
 
-    float i_alpha_err;      //Iα电流误差
-    float i_beta_err;       //Iβ电流误差
+    float i_alpha_err;          //Iα电流误差
+    float i_beta_err;           //Iβ电流误差
 
     float h;                    //滑膜增益
 
@@ -50,6 +50,9 @@ typedef struct
 
     uint32_t last_tick;          //上次观察的时间
     float    ts_dt;              //观察的时间差，单位 s
+
+    float     z_alpha;            //alpha 轴滑膜观测器的 z 平面
+    float     z_beta;             //beta 轴滑膜观测器的 z 平面
 } smo_pll_t;
 
 typedef struct
@@ -63,8 +66,9 @@ typedef struct
 } current_foc_t;
 
 float foc_low_pass_filter(lp_filter_t *lpf, float input);
-void iq_id_cal(current_foc_t *current_foc, float i_u, float i_v, float i_w, float pos_radian);
-void smo_pll_close_loop(smo_pll_t *p_smo_pll, current_foc_t *p_current_foc);
+
+_RAM_FUNC void iq_id_cal(current_foc_t *current_foc, float i_u, float i_v, float i_w, float pos_radian);
+_RAM_FUNC void smo_pll_close_loop(smo_pll_t *p_smo_pll, current_foc_t *p_current_foc);
 
 
 #endif

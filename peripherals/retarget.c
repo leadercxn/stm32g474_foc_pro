@@ -51,10 +51,16 @@ __attribute__((weak)) int _read(int file, char *ptr, int len)
 __attribute__((weak)) int _write(int file, char *ptr, int len)
 {
     (void)file;
+
+#if 0
     int DataIdx;
     for (DataIdx = 0; DataIdx < len; DataIdx++) {
         __io_putchar(*ptr++);
     }
+#endif
+
+    usart1_tx((uint8_t *)ptr, len);
+
     return len;
 }
 #endif

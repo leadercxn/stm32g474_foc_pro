@@ -12,6 +12,8 @@ static TIM_HandleTypeDef m_timer8_handle;
 
 uint64_t g_tim8_50us_ticks = 0;  //50us定时器计数 1= 50us
 
+static timer8_irq_cb_t m_timer8_cb_handler = NULL;
+
 static void pwm_io_init(void)
 {
     GPIO_InitTypeDef gpio_init_struct = { 0 };
@@ -73,7 +75,7 @@ int timer8_init(void)
     m_timer8_handle.Init.Period             = PWM_PERIOD;                       //20K
     m_timer8_handle.Init.ClockDivision      = TIM_CLOCKDIVISION_DIV1;
     m_timer8_handle.Init.RepetitionCounter  = 0;
-    m_timer8_handle.Init.AutoReloadPreload  = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    m_timer8_handle.Init.AutoReloadPreload  = TIM_AUTORELOAD_PRELOAD_DISABLE;   //统计好下次的时间后，再加载CCR
 #else
     //timer base cfg
     m_timer8_handle.Instance                = TIM8;
@@ -138,7 +140,7 @@ int timer8_init(void)
     break_deadtime_cfg.OffStateRunMode  = TIM_OSSR_DISABLE;
     break_deadtime_cfg.OffStateIDLEMode = TIM_OSSI_DISABLE;
     break_deadtime_cfg.LockLevel        = TIM_LOCKLEVEL_OFF;
-    break_deadtime_cfg.DeadTime         = 20;                  //死区延时
+    break_deadtime_cfg.DeadTime         = 10;                  //死区延时
     break_deadtime_cfg.BreakState       = TIM_BREAK_DISABLE;
     break_deadtime_cfg.BreakPolarity    = TIM_BREAKPOLARITY_HIGH;
     break_deadtime_cfg.AutomaticOutput  = TIM_AUTOMATICOUTPUT_DISABLE;
@@ -198,7 +200,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         zero_ctr_loop();        //无感控制逻辑
 #endif
 
+        if(m_timer8_cb_handler != NULL)
+        {
+            m_timer8_cb_handler();
+        }
     }
+}
+
+void timer8_irq_cb_register(timer8_irq_cb_t cb)
+{
+    if(cb == NULL)
+    {
+        return;
+    }
+
+    m_timer8_cb_handler = cb;
 }
 
 /**

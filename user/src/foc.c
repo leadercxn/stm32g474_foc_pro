@@ -23,6 +23,24 @@ float radian_normalize(float radian)
 	return (a >= 0) ? a : (a + DOUBLE_PI);
 }
 
+void pi_cal(pi_cal_t *sptr, float error)
+{
+    sptr->out     = sptr->kp * error + sptr->ki * sptr->sum_err;
+    sptr->sum_err += error;
+
+    //积分限幅
+    if(sptr->sum_err>=sptr->iout_max)
+        sptr->sum_err=sptr->iout_max;
+    else if (sptr->sum_err<=-sptr->iout_max)
+        sptr->sum_err=-sptr->iout_max;
+
+    //输出限幅
+    if(sptr->out >= sptr->out_max)
+        sptr->out = sptr->out_max;
+    else if (sptr->out <= -sptr->out_max)
+        sptr->out=-sptr->out_max;
+}
+
 
 /**
  * @brief 设置力矩 , 传入需要进行 iPark 变换的参数

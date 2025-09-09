@@ -133,6 +133,7 @@ user/src/clark.c				\
 user/src/park.c					\
 user/src/six_steps.c			\
 user/src/smo_pll.c 				\
+user/src/ekf.c 					\
 
 # ASM sources
 ASM_SOURCES =  \

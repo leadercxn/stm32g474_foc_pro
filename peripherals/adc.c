@@ -27,7 +27,7 @@ int adc_init(void)
     m_adc2_handle.Init.EOCSelection             = ADC_EOC_SINGLE_CONV;
     m_adc2_handle.Init.LowPowerAutoWait         = DISABLE;
     m_adc2_handle.Init.ContinuousConvMode       = ENABLE;
-    m_adc2_handle.Init.NbrOfConversion          = 8;
+    m_adc2_handle.Init.NbrOfConversion          = ADC_CHAN_NUM;
     m_adc2_handle.Init.DiscontinuousConvMode    = DISABLE;
     m_adc2_handle.Init.ExternalTrigConv         = ADC_SOFTWARE_START;
     m_adc2_handle.Init.ExternalTrigConvEdge     = ADC_EXTERNALTRIGCONVEDGE_NONE;

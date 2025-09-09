@@ -12,9 +12,12 @@
 
 #include "trace.h"
 
+extern void Error_Handler(void);
+
 #define USART1_RX_TIMEOUT       6
 
 static UART_HandleTypeDef m_huart1_handle;
+static DMA_HandleTypeDef  m_dma_usart1_handle;
 
 static uint8_t      m_rx_data; // HAL库使用的串口接收缓冲
 static app_fifo_t   m_usart1_rx_fifo;               // rx 的信息fifo
@@ -39,7 +42,22 @@ int usart1_init(void)
     m_huart1_handle.Init.Parity     = UART_PARITY_NONE;     /* 无奇偶校验位 */
     m_huart1_handle.Init.HwFlowCtl  = UART_HWCONTROL_NONE;  /* 无硬件流控 */
     m_huart1_handle.Init.Mode       = UART_MODE_TX_RX;      /* 收发模式 */
+
+    m_huart1_handle.Init.OverSampling = UART_OVERSAMPLING_16;
+    m_huart1_handle.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+    m_huart1_handle.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+    m_huart1_handle.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
     HAL_UART_Init(&m_huart1_handle);                        /* HAL_UART_Init()会使能UART1 */
+
+    if (HAL_UARTEx_SetTxFifoThreshold(&m_huart1_handle, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    if (HAL_UARTEx_DisableFifoMode(&m_huart1_handle) != HAL_OK)
+    {
+        Error_Handler();
+    }
     
     /* 该函数会开启接收中断：标志位UART_IT_RXNE，并且设置接收缓冲以及接收缓冲接收最大数据量 */
     HAL_UART_Receive_IT(&m_huart1_handle, (uint8_t *)&m_rx_data, sizeof(m_rx_data));
@@ -63,7 +81,8 @@ int usart1_tx(uint8_t *p_tx_data, uint16_t len)
         return -HAL_ERROR;
     }
 
-    return HAL_UART_Transmit(&m_huart1_handle, p_tx_data, len, 10);    //超时先写个demo
+    //return HAL_UART_Transmit(&m_huart1_handle, p_tx_data, len, 10);    //超时先写个demo
+    return HAL_UART_Transmit_DMA(&m_huart1_handle, p_tx_data, len);
 }
 
 int usart1_rx(uint8_t *p_rx_data)
@@ -140,6 +159,25 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     gpio_init_struct.Alternate  = USART1_TX_AF;
   
     HAL_GPIO_Init(USART1_TX_PORT, &gpio_init_struct);
+
+    __HAL_RCC_DMAMUX1_CLK_ENABLE();
+    __HAL_RCC_DMA1_CLK_ENABLE();
+
+    m_dma_usart1_handle.Instance                  = DMA1_Channel2;
+    m_dma_usart1_handle.Init.Request              = DMA_REQUEST_USART1_TX;
+    m_dma_usart1_handle.Init.Direction            = DMA_MEMORY_TO_PERIPH;
+    m_dma_usart1_handle.Init.PeriphInc            = DMA_PINC_DISABLE;
+    m_dma_usart1_handle.Init.MemInc               = DMA_MINC_ENABLE;
+    m_dma_usart1_handle.Init.PeriphDataAlignment  = DMA_PDATAALIGN_BYTE;
+    m_dma_usart1_handle.Init.MemDataAlignment     = DMA_PDATAALIGN_BYTE;
+    m_dma_usart1_handle.Init.Mode                 = DMA_NORMAL;
+    m_dma_usart1_handle.Init.Priority             = DMA_PRIORITY_LOW;
+    if (HAL_DMA_Init(&m_dma_usart1_handle) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_LINKDMA(huart, hdmatx, m_dma_usart1_handle);
 
     HAL_NVIC_EnableIRQ(USART1_IRQn);                      /* 使能USART1中断通道 */
     HAL_NVIC_SetPriority(USART1_IRQn, 3, 3);              /* 抢占优先级3，子优先级3 */
