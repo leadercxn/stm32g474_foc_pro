@@ -20,27 +20,12 @@
 #include "motor_ctrl_task.h"
 
 #include "foc.h"
-#include "ekf.h"
+//#include "ekf.h"
 
 static void param_init(void)
 {
     g_app_param.foc_ts    = (float) (1.0f / PWM_FREQ);
-    g_app_param.smo_f     = expf( (- MOTOR_PHASE_RES / MOTOR_PHASE_LS) * g_app_param.foc_ts);
-    g_app_param.smo_g     = (1.0f - g_app_param.smo_f) / MOTOR_PHASE_RES;
-    g_app_param.smo_g    *= (MOTOR_RATED_V * SQRT_3_DIV_3 / MOTOR_RATED_I);   // 额定电压除以额定电流，得到阻抗值, 参考 硕历达的程序
-
-    g_app_param.smo_k_slide   = 0.168f;
-    g_app_param.smo_k_slf     = 0.058;
-    g_app_param.smo_i_err_max = 0.5f;
-
-    g_app_param.vel_coeff = (float) ( 1.0f / (g_app_param.foc_ts * VEL_LOOP_EXEC_FREQ) * 60.0f / (MOTOR_POLE_PAIRS * DOUBLE_PI) ); // 速度系数，RPM 转换为 电角度/50us
-
     g_app_param.ekf_theta = 0.0f;
-
-    trace_debug("foc ts %.5f, smo f %.5f, smo g %.5f, vel_coeff %.4f\r\n", \
-    g_app_param.foc_ts, g_app_param.smo_f, g_app_param.smo_g, g_app_param.vel_coeff);
-
-    g_smo_pll.ts_dt = g_app_param.foc_ts;
 
     g_iq_pi.kp       = 1.2f;
     g_iq_pi.ki       = 0.3f;
@@ -51,7 +36,35 @@ static void param_init(void)
     g_id_pi.ki       = 0.1f;
     g_id_pi.out_max  = 4.0f;
     g_id_pi.iout_max = 10.0f;
+}
 
+/**
+ * 测试sinf, arm_sin计算的速度
+ */
+void sin_cal_speed_compare(void)
+{
+    trace_debug("sinf %.4f, arm_sin f %.4f, cosf %.4f, arm_cos f %.4f\r\n", \
+    sinf(2.22f), arm_sin_f32(2.22f), cosf(1.56f), arm_cos_f32(1.56f));
+
+    float temp = 0;
+    uint32_t ticks = 0;
+    uint32_t ticks_delta = 0;
+
+    ticks = sys_time_ms_get();
+    for(uint32_t i = 0; i < 100000; i++)
+    {
+      temp = sinf(2.22f);     //对比好像这个运行更快
+    }
+    ticks_delta = sys_time_ms_get() - ticks;
+    trace_debug("sinf %lu\r\n", ticks_delta);
+
+    ticks = sys_time_ms_get();
+    for(uint32_t i = 0; i < 100000; i++)
+    {
+      temp = arm_sin_f32(2.22f);
+    }
+    ticks_delta = sys_time_ms_get() - ticks;
+    trace_debug("arm_sin_f32 %lu\r\n", ticks_delta);
 }
 
 int main(void)
@@ -77,10 +90,10 @@ int main(void)
 
   trace_info("STM32G474 FOC Test Start \r\n\r\n")
 
-  param_init();     //参数初始化
-  apt_ekf_init();
-
   phase_pwm_start();
+
+  param_init();     //参数初始化
+//  apt_ekf_init();
 
   while (1)
   {
@@ -100,13 +113,15 @@ int main(void)
         gpio_output_set(LED_STAT_PORT, LED_STAT_PIN, led_stat);
         gpio_output_set(TEST_IO_PORT, TEST_IO_PIN, led_stat);
 
+//        sin_cal_speed_compare();
+
 #if 0
         trace_debug("sys time ms %lu\r\n", sys_time_ms_get());
 
         trace_debug("adc 1-%d, 2-%d, 3-%d, 4-%d, 5-%d, 6-%d, 7-%d, 8-%d\r\n", \
-        adc_sample_data_get(ADC_CH_U_VOLT), adc_sample_data_get(ADC_CH_V_VOLT), adc_sample_data_get(ADC_CH_W_VOLT), \
-        adc_sample_data_get(ADC_CH_U_I), adc_sample_data_get(ADC_CH_V_I), adc_sample_data_get(ADC_CH_W_I), \
-        adc_sample_data_get(ADC_CH_VBUS), adc_sample_data_get(ADC_CH_TEMP));
+        adc_reg_sample_data_get(ADC_CH_U_VOLT), adc_reg_sample_data_get(ADC_CH_V_VOLT), adc_reg_sample_data_get(ADC_CH_W_VOLT), \
+        adc_reg_sample_data_get(ADC_CH_VBUS), adc_reg_sample_data_get(ADC_CH_TEMP), \
+        adc_inj_sample_data_get(0), adc_inj_sample_data_get(1), adc_inj_sample_data_get(2) );
 #endif
 
 #if 0
@@ -116,7 +131,7 @@ int main(void)
         adc_sample_physical_value_get(ADC_CH_V_I), adc_sample_physical_value_get(ADC_CH_W_I),   \
         adc_sample_physical_value_get(ADC_CH_VBUS), adc_sample_physical_value_get(ADC_CH_TEMP));
 
-        trace_debug("motor real speed = %d\r\n", g_app_param.motor_speed_real);
+//        trace_debug("motor real speed = %d\r\n", g_app_param.motor_speed_real);
 #endif
 
 // 测试svpwm

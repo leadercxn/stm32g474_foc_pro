@@ -56,6 +56,7 @@ C_DEFS =  			\
 -DSTM32G474xx		\
 -DTRACE_ENABLE		\
 -DTRACE_LEVEL=7		\
+-DSIMULINK_USE_ARM_MATH		\
 
 # 六步换相启动控制宏
 #-DSIX_STEPS_ENABLE	\
@@ -72,6 +73,7 @@ C_INCLUDES =  		\
 -I $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Inc/Legacy 	\
 -I $(SDK_DIR)/platform/stm32/stm32g4/CMSIS/Device/ST/STM32G4xx/Include 	\
 -I $(SDK_DIR)/platform/stm32/stm32g4/CMSIS/Include						\
+-I $(SDK_DIR)/platform/stm32/stm32g4/CMSIS/DSP/Include					\
 -I $(SDK_DIR)/components/queue				\
 -I $(SDK_DIR)/components/app_timer			\
 -I $(SDK_DIR)/components/app_scheduler		\
@@ -85,6 +87,7 @@ C_INCLUDES =  		\
 -I user/tasks 								\
 -I user/sdk_r 								\
 -I user/src									\
+-I user/third_foc							\
 
 # C sources
 C_SOURCES =  	\
@@ -110,6 +113,8 @@ $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_uart.c 
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_uart_ex.c \
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc.c \
 $(SDK_DIR)/platform/stm32/stm32g4/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc_ex.c \
+$(SDK_DIR)/platform/stm32/stm32g4/CMSIS/DSP/Source/FastMathFunctions/FastMathFunctions.c	\
+$(SDK_DIR)/platform/stm32/stm32g4/CMSIS/DSP/Source/CommonTables/CommonTables.c	\
 $(SDK_DIR)/components/app_scheduler/app_scheduler.c				\
 $(SDK_DIR)/components/app_fifo/app_fifo.c						\
 $(SDK_DIR)/components/trace/trace.c								\
@@ -128,12 +133,15 @@ peripherals/adc.c				\
 user/parameters.c				\
 user/tasks/sensors_task.c		\
 user/tasks/motor_ctrl_task.c	\
+user/tasks/algorithm_task.c		\
 user/src/foc.c					\
 user/src/clark.c				\
 user/src/park.c					\
-user/src/six_steps.c			\
-user/src/smo_pll.c 				\
-user/src/ekf.c 					\
+user/third_foc/foc_algorithm.c 	\
+user/third_foc/IIR_LPF.c 		\
+user/third_foc/SMO_PLL.c 		\
+user/third_foc/speed_pid.c 		\
+user/third_foc/stm32_ekf_wrapper.c 	\
 
 # ASM sources
 ASM_SOURCES =  \

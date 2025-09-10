@@ -5,8 +5,13 @@
 
 #include "boards.h"
 #include "foc.h"
-#include "smo_pll.h"
 #include "pid.h"
+
+#include "speed_pid.h"
+#include "foc_algorithm.h"
+#include "SMO_PLL.h"
+#include "IIR_LPF.h"
+#include "arm_math.h"
 
 #define SYS_CLK_FREQ    170000000
 #define PWM_FREQ        20000       //20K
@@ -31,6 +36,7 @@
 //FOC参数
 #define I_LOOP_EXEC_FREQ        1     //电流环执行频率 1 = 50us
 #define VEL_LOOP_EXEC_FREQ      40    //速度环执行频率 40 * 50 = 2000us = 2ms
+#define FOC_PERIOD              0.0001F
 
 #define FIRST_ORDER_LPF(OUT, IN, FAC)  OUT = (1.0f - FAC) * OUT + FAC * IN;  /*一阶滤波 */
 
@@ -61,23 +67,13 @@ typedef enum
 } motor_dir_e;
 
 /***************************************** 电机状态结构体 ***********************************************/
-typedef struct {
-    uint8_t    run_flag;       //运行标志  0- 停止  1- 运行
-    uint8_t    locked_rotor;   //堵转标记  0- 否    1-堵转
-    uint8_t    dir;            //电机旋转方向   0顺时针 1逆时针
-    int32_t    pos;            /* 电机位置 */
-    int32_t    speed;          /* 电机速度 */
-    int16_t    current;        /* 电机速度 */
-    uint16_t   pwm_duty;       /* 电机占空比 */
-    uint32_t   lock_time;      /* 电机堵转时间 */
-    uint32_t   no_single;
-    uint32_t   count_j;
-} bldc_obj_t;
 
 // 全局应用参数
 typedef struct
 {
     motor_sta_e motor_sta;          // 电机状态
+    motor_sta_e pre_motor_sta;      // 电机前一状态
+
     motor_dir_e motor_dir;          // 电机方向
 
     motor_start_sta_e   motor_start_acc_sta;    //电机启动加速状态
@@ -91,34 +87,15 @@ typedef struct
     float       curr_uq;            //  当前Uq
     float       curr_theta;         //  当前角度值
 
-    foc_param_t foc_i;  // 电机foc i电流值
-    foc_param_t foc_u;  // 电机foc u电压值
-
     float       foc_ts;         // FOC计算周期，单位s
-    float       smo_f;          //滑膜系数1
-    float       smo_g;          //滑膜系数2
-    float       smo_k_slide;    //smo 滤波器系数
-    float       smo_k_slf;      //smo 滤波器系数
-    float       smo_i_err_max;  //smo i误差限幅
-
-    float       vel_coeff;      //速度系数，RPM 转换为 电角度/50us
 
     float       ekf_theta;
     float       ekf_angle_speed;
     float       ekf_u_alpha;
     float       ekf_u_beta;
-
-
 } app_param_t;
 
 extern app_param_t g_app_param;
-extern bldc_obj_t  g_bldc_motor;
-
-extern smo_pll_t        g_smo_pll;
-extern current_foc_t    g_current_foc;
-
-extern pid_obj_t g_moter_i_loop_pid;
-extern pid_obj_t g_moter_vel_loop_pid;
 
 extern pi_cal_t g_iq_pi;
 extern pi_cal_t g_id_pi;

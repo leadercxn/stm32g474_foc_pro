@@ -13,21 +13,6 @@ void phase_pwm_stop(void);
 
 void timer8_irq_cb_register(timer8_irq_cb_t cb);
 
-/**
- * 六步换相API
- * 
- */
-void motor_stop(void);
-void motor_start(void);
-
-void motor_uhvl(void);
-void motor_uhwl(void);
-void motor_vhwl(void);
-void motor_vhul(void);
-void motor_whul(void);
-void motor_whvl(void);
-
-
 #endif
 
 

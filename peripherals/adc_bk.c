@@ -8,16 +8,15 @@
 
 extern void Error_Handler(void);
 
-ADC_HandleTypeDef m_adc2_handle;
+static ADC_HandleTypeDef m_adc2_handle;
 static DMA_HandleTypeDef m_dma_adc2_handle;
 
-static bool m_calibration_done = false;
 /**
  * adc2初始化函数
  */
 int adc_init(void)
 {
-    ADC_ChannelConfTypeDef      channle_cfg = {0};  //规则通道
+    ADC_ChannelConfTypeDef      channle_cfg = {0};
 
     m_adc2_handle.Instance                      = ADC2;
     m_adc2_handle.Init.ClockPrescaler           = ADC_CLOCK_SYNC_PCLK_DIV4;
@@ -28,7 +27,7 @@ int adc_init(void)
     m_adc2_handle.Init.EOCSelection             = ADC_EOC_SINGLE_CONV;
     m_adc2_handle.Init.LowPowerAutoWait         = DISABLE;
     m_adc2_handle.Init.ContinuousConvMode       = ENABLE;
-    m_adc2_handle.Init.NbrOfConversion          = ADC_REG_CHAN_NUM;
+    m_adc2_handle.Init.NbrOfConversion          = ADC_CHAN_NUM;
     m_adc2_handle.Init.DiscontinuousConvMode    = DISABLE;
     m_adc2_handle.Init.ExternalTrigConv         = ADC_SOFTWARE_START;
     m_adc2_handle.Init.ExternalTrigConvEdge     = ADC_EXTERNALTRIGCONVEDGE_NONE;
@@ -79,53 +78,37 @@ int adc_init(void)
         Error_Handler();
     }
 
-    channle_cfg.Channel = ADC_CHANNEL_15;
+    channle_cfg.Channel = ADC_CHANNEL_11;
     channle_cfg.Rank    = ADC_REGULAR_RANK_4;
     if (HAL_ADC_ConfigChannel(&m_adc2_handle, &channle_cfg) != HAL_OK)
     {
         Error_Handler();
     }
 
-    channle_cfg.Channel = ADC_CHANNEL_17;
+    channle_cfg.Channel = ADC_CHANNEL_12;
     channle_cfg.Rank    = ADC_REGULAR_RANK_5;
     if (HAL_ADC_ConfigChannel(&m_adc2_handle, &channle_cfg) != HAL_OK)
     {
         Error_Handler();
     }
 
-    // 配置注入通道
-    ADC_InjectionConfTypeDef injection_ch_cfg = {0};
-
-    injection_ch_cfg.InjectedChannel                = ADC_CHANNEL_11;
-    injection_ch_cfg.InjectedRank                   = ADC_INJECTED_RANK_1;
-    injection_ch_cfg.InjectedSamplingTime           = ADC_SAMPLETIME_2CYCLES_5;
-    injection_ch_cfg.InjectedSingleDiff             = ADC_SINGLE_ENDED;
-    injection_ch_cfg.InjectedOffsetNumber           = ADC_OFFSET_NONE;
-    injection_ch_cfg.InjectedOffset                 = 0;
-    injection_ch_cfg.InjectedNbrOfConversion        = ADC_INJ_CHAN_NUM;
-    injection_ch_cfg.InjectedDiscontinuousConvMode  = DISABLE;
-    injection_ch_cfg.AutoInjectedConv               = DISABLE;
-    injection_ch_cfg.QueueInjectedContext           = DISABLE;
-    injection_ch_cfg.ExternalTrigInjecConv          = ADC_INJECTED_SOFTWARE_START;
-    injection_ch_cfg.ExternalTrigInjecConvEdge      = ADC_EXTERNALTRIGINJECCONV_EDGE_NONE;
-//    injection_ch_cfg.ExternalTrigInjecConv          = ADC_EXTERNALTRIGINJEC_T8_CC4;
-//    injection_ch_cfg.ExternalTrigInjecConvEdge      = ADC_EXTERNALTRIGINJECCONV_EDGE_RISING;
-    injection_ch_cfg.InjecOversamplingMode          = DISABLE;
-    if (HAL_ADCEx_InjectedConfigChannel(&m_adc2_handle, &injection_ch_cfg) != HAL_OK)
+    channle_cfg.Channel = ADC_CHANNEL_13;
+    channle_cfg.Rank    = ADC_REGULAR_RANK_6;
+    if (HAL_ADC_ConfigChannel(&m_adc2_handle, &channle_cfg) != HAL_OK)
     {
         Error_Handler();
     }
 
-    injection_ch_cfg.InjectedChannel  = ADC_CHANNEL_12;
-    injection_ch_cfg.InjectedRank     = ADC_INJECTED_RANK_2;
-    if (HAL_ADCEx_InjectedConfigChannel(&m_adc2_handle, &injection_ch_cfg) != HAL_OK)
+    channle_cfg.Channel = ADC_CHANNEL_15;
+    channle_cfg.Rank    = ADC_REGULAR_RANK_7;
+    if (HAL_ADC_ConfigChannel(&m_adc2_handle, &channle_cfg) != HAL_OK)
     {
         Error_Handler();
     }
 
-    injection_ch_cfg.InjectedChannel  = ADC_CHANNEL_13;
-    injection_ch_cfg.InjectedRank     = ADC_INJECTED_RANK_3;
-    if (HAL_ADCEx_InjectedConfigChannel(&m_adc2_handle, &injection_ch_cfg) != HAL_OK)
+    channle_cfg.Channel = ADC_CHANNEL_17;
+    channle_cfg.Rank    = ADC_REGULAR_RANK_8;
+    if (HAL_ADC_ConfigChannel(&m_adc2_handle, &channle_cfg) != HAL_OK)
     {
         Error_Handler();
     }
@@ -187,10 +170,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
 
     __HAL_LINKDMA(adcHandle, DMA_Handle, m_dma_adc2_handle);
 
-    HAL_NVIC_SetPriority(ADC1_2_IRQn, 0, 2);
-    HAL_NVIC_EnableIRQ(ADC1_2_IRQn);
-
-    HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 2, 1);                        /* 设置DMA中断优先级为2，子优先级为0 */
+    HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 2, 0);                        /* 设置DMA中断优先级为2，子优先级为0 */
     HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);    
   }
 }
@@ -205,51 +185,26 @@ void DMA1_Channel1_IRQHandler(void)
     HAL_DMA_IRQHandler(&m_dma_adc2_handle);
 }
 
-void ADC1_2_IRQHandler(void)
+void adc_start(uint32_t *p_dma_adc_rx_data)
 {
-    HAL_ADC_IRQHandler(&m_adc2_handle);
-
-//    HAL_ADCEx_InjectedStart_IT(&m_adc2_handle); 
-}
-
-void adc_reg_start(uint32_t *p_dma_adc_rx_data)
-{
+    static bool calibration_done = false;
     int err_code = 0;
     
-    if(m_calibration_done == false)
+    if(calibration_done == false)
     {
         err_code = HAL_ADCEx_Calibration_Start(&m_adc2_handle, ADC_SINGLE_ENDED);   //ADC 启动前自校准
         if(err_code == 0)
         {
-            m_calibration_done = true;
+            calibration_done = true;
         }
     }
 
     HAL_ADC_Start_DMA(&m_adc2_handle, p_dma_adc_rx_data, ADC_TOTAL_COLLECT_NUM);      //用于ADC1规则通道DMA传输
 }
 
-void adc_reg_stop(void)
+void adc_stop(void)
 {
     HAL_ADC_Stop_DMA(&m_adc2_handle);      //停止DMA传输
 }
 
-void adc_inj_start(void)
-{
-    int err_code = 0;
-    
-    if(m_calibration_done == false)
-    {
-        err_code = HAL_ADCEx_Calibration_Start(&m_adc2_handle, ADC_SINGLE_ENDED);   //ADC 启动前自校准
-        if(err_code == 0)
-        {
-            m_calibration_done = true;
-        }
-    }
 
-    HAL_ADCEx_InjectedStart_IT(&m_adc2_handle);//启动ADC1注入通道转换
-}
-
-void adc_inj_stop(void)
-{
-    HAL_ADCEx_InjectedStop_IT(&m_adc2_handle);
-}
