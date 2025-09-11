@@ -51,9 +51,9 @@ int timer8_init(void)
     //timer base cfg
     m_timer8_handle.Instance                = TIM8;
     m_timer8_handle.Init.Prescaler          = 0;                                //不分频
-    m_timer8_handle.Init.CounterMode        = TIM_COUNTERMODE_CENTERALIGNED2;   //中心对齐模式2
+    m_timer8_handle.Init.CounterMode        = TIM_COUNTERMODE_CENTERALIGNED1;   //中心对齐模式2
     m_timer8_handle.Init.Period             = PWM_PERIOD;                       //20K
-    m_timer8_handle.Init.ClockDivision      = TIM_CLOCKDIVISION_DIV1;
+    m_timer8_handle.Init.ClockDivision      = TIM_CLOCKDIVISION_DIV2;
     m_timer8_handle.Init.RepetitionCounter  = 0;
     m_timer8_handle.Init.AutoReloadPreload  = TIM_AUTORELOAD_PRELOAD_ENABLE;
 

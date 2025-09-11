@@ -4,7 +4,7 @@
 
 #include "foc_algorithm.h"
 
-
+#include "trace.h"
 
 real32_T D_PI_I = 2282.8F;
 real32_T D_PI_KB = 15.0F;
@@ -21,10 +21,10 @@ real32_T Q_PI_UP_LIMIT = 10.0F;
 FOC_INTERFACE_STATES_DEF FOC_Interface_states;
 
 
-FOC_INPUT_DEF FOC_Input;
+FOC_INPUT_DEF g_FOC_Input;
 
 
-FOC_OUTPUT_DEF FOC_Output;
+FOC_OUTPUT_DEF g_FOC_Output;
 
 
 RT_MODEL rtM_;
@@ -136,7 +136,9 @@ void SVPWM_Calc(VOLTAGE_ALPHA_BETA_DEF v_alpha_beta_temp,real32_T Udc_temp,real3
   if ((-1.73205078F * v_alpha_beta_temp.Valpha - v_alpha_beta_temp.Vbeta) / 2.0F > 0.0F) {
     sector += 4;
   }
-  
+
+//  trace_debug("sector %d, alpha %.3f, beta %.3f\r\n", sector, v_alpha_beta_temp.Valpha, v_alpha_beta_temp.Vbeta);
+
   switch (sector) {
   case 1:
     Tx = (-1.5F * v_alpha_beta_temp.Valpha + 0.866025388F * v_alpha_beta_temp.Vbeta) * (Tpwm_temp / Udc_temp);
@@ -216,9 +218,9 @@ void SVPWM_Calc(VOLTAGE_ALPHA_BETA_DEF v_alpha_beta_temp,real32_T Udc_temp,real3
     break;
   }
   
-  FOC_Output.Tcmp1 = Tcmp1;
-  FOC_Output.Tcmp2 = Tcmp2;
-  FOC_Output.Tcmp3 = Tcmp3;
+  g_FOC_Output.Tcmp1 = Tcmp1;
+  g_FOC_Output.Tcmp2 = Tcmp2;
+  g_FOC_Output.Tcmp3 = Tcmp3;
 }
 
 /***************************************
@@ -283,36 +285,38 @@ void Current_PID_Calc(real32_T ref_temp,real32_T fdb_temp,real32_T* out_temp,CUR
 void foc_algorithm_step(void)
 {
 
-  Current_Iabc.Ia = FOC_Input.ia;         //三相电流赋值
-  Current_Iabc.Ib = FOC_Input.ib;
-  Current_Iabc.Ic = FOC_Input.ic;
+  Current_Iabc.Ia = g_FOC_Input.ia;         //三相电流赋值
+  Current_Iabc.Ib = g_FOC_Input.ib;
+  Current_Iabc.Ic = g_FOC_Input.ic;
   
-  Clarke_Transf(Current_Iabc,&Current_Ialpha_beta);        //CLARK 变换
-  Angle_To_Cos_Sin(FOC_Input.theta,&Transf_Cos_Sin);     //由角度计算 park变换和 反park变换的 COS SIN值
-  Park_Transf(Current_Ialpha_beta,Transf_Cos_Sin,&Current_Idq);  //Park变换，由Ialpha Ibeta 与角度信息，去计算Id Iq  // 由交流信息转化为直流信息，方便PID控制 
-	Current_PID_Calc(FOC_Input.Id_ref,Current_Idq.Id,&Voltage_DQ.Vd,&Current_D_PID);     //D轴电流环PID  根据电流参考与电流反馈去计算 输出电压
-  Current_PID_Calc(FOC_Input.Iq_ref,Current_Idq.Iq,&Voltage_DQ.Vq,&Current_Q_PID);     //Q轴电流环PID  根据电流参考与电流反馈去计算 输出电压
-  Rev_Park_Transf(Voltage_DQ,Transf_Cos_Sin,&Voltage_Alpha_Beta);                //反park变换  通过电流环得到的dq轴电压信息结合角度信息，去把直流信息转化为交流信息用于SVPWM的输入
+  Clarke_Transf(Current_Iabc, &Current_Ialpha_beta);                                    //CLARK 变换
+  Angle_To_Cos_Sin(g_FOC_Input.theta, &Transf_Cos_Sin);                                 //由角度计算 park变换和 反park变换的 COS SIN值
+  Park_Transf(Current_Ialpha_beta, Transf_Cos_Sin, &Current_Idq);                       //Park变换，由Ialpha Ibeta 与角度信息，去计算Id Iq  // 由交流信息转化为直流信息，方便PID控制 
+
+	Current_PID_Calc(g_FOC_Input.Id_ref, Current_Idq.Id, &Voltage_DQ.Vd, &Current_D_PID); //D轴电流环PID  根据电流参考与电流反馈去计算 输出电压
+  Current_PID_Calc(g_FOC_Input.Iq_ref, Current_Idq.Iq, &Voltage_DQ.Vq, &Current_Q_PID); //Q轴电流环PID  根据电流参考与电流反馈去计算 输出电压
+
+  Rev_Park_Transf(Voltage_DQ, Transf_Cos_Sin, &Voltage_Alpha_Beta);                     //反park变换  通过电流环得到的dq轴电压信息结合角度信息，去把直流信息转化为交流信息用于SVPWM的输入
 
   FOC_Interface_states.EKF_Interface[0] = Voltage_Alpha_Beta.Valpha;   //扩展卡尔曼估计转子位置与速度需要的输入信息
   FOC_Interface_states.EKF_Interface[1] = Voltage_Alpha_Beta.Vbeta;    //状态观测器输入
   FOC_Interface_states.EKF_Interface[2] = Current_Ialpha_beta.Ialpha;
   FOC_Interface_states.EKF_Interface[3] = Current_Ialpha_beta.Ibeta;
-  FOC_Interface_states.EKF_Interface[4] = FOC_Input.Rs;
-  FOC_Interface_states.EKF_Interface[5] = FOC_Input.Ls;
-  FOC_Interface_states.EKF_Interface[6] = FOC_Input.flux;
+  FOC_Interface_states.EKF_Interface[4] = g_FOC_Input.Rs;
+  FOC_Interface_states.EKF_Interface[5] = g_FOC_Input.Ls;
+  FOC_Interface_states.EKF_Interface[6] = g_FOC_Input.flux;
 	
-  SMO_Observer(Voltage_Alpha_Beta.Valpha,Voltage_Alpha_Beta.Vbeta,Current_Ialpha_beta.Ialpha,Current_Ialpha_beta.Ibeta,&SMO_Struct_def);
+  SMO_Observer(Voltage_Alpha_Beta.Valpha, Voltage_Alpha_Beta.Vbeta, Current_Ialpha_beta.Ialpha, Current_Ialpha_beta.Ibeta, &SMO_Struct_def);
 	
-  stm32_ekf_Outputs_wrapper(&FOC_Interface_states.EKF_Interface[0], &FOC_Output.EKF[0],  //扩展卡尔曼估计转子位置与速度的输出函数
+  stm32_ekf_Outputs_wrapper(&FOC_Interface_states.EKF_Interface[0], &g_FOC_Output.EKF[0],  //扩展卡尔曼估计转子位置与速度的输出函数
                             &FOC_Interface_states.EKF_States[0]);
 
-  SVPWM_Calc(Voltage_Alpha_Beta,FOC_Input.Udc,FOC_Input.Tpwm);       //SVPWM 计算模块
+  SVPWM_Calc(Voltage_Alpha_Beta, g_FOC_Input.Udc, g_FOC_Input.Tpwm);       //SVPWM 计算模块
 	
-  stm32_ekf_Update_wrapper(&FOC_Interface_states.EKF_Interface[0], &FOC_Output.EKF[0],   //扩展卡尔曼滤波算法的计算
+  stm32_ekf_Update_wrapper(&FOC_Interface_states.EKF_Interface[0], &g_FOC_Output.EKF[0],   //扩展卡尔曼滤波算法的计算
                            &FOC_Interface_states.EKF_States[0]);  
 													 
-  PLL_control(SMO_Struct_def.Valfa,SMO_Struct_def.Vbeta,&PLL_def);
+  PLL_control(SMO_Struct_def.Valfa, SMO_Struct_def.Vbeta, &PLL_def);
 
 }
 
@@ -343,7 +347,7 @@ void foc_algorithm_initialize(void)
 
   IIR_LPF_Start_wrapper();
 	//速度闭环，初始设置速度闭环参考--120rad/s --- 1000r/min
-  //Speed_Ref = 20.0f;
+  //g_Speed_Ref = 20.0f;
   //状态变量初始化
   {
     real_T initVector[4] = { 0, 0, 0, 0 };

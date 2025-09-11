@@ -24,9 +24,10 @@
 
 static void param_init(void)
 {
-    g_app_param.foc_ts    = (float) (1.0f / PWM_FREQ);
+    g_app_param.foc_ts    = FOC_PERIOD;   //依据 adc_inj_start 的执行频率
     g_app_param.ekf_theta = 0.0f;
 
+#if 0
     g_iq_pi.kp       = 1.2f;
     g_iq_pi.ki       = 0.3f;
     g_iq_pi.out_max  = 4.0f;
@@ -36,6 +37,13 @@ static void param_init(void)
     g_id_pi.ki       = 0.1f;
     g_id_pi.out_max  = 4.0f;
     g_id_pi.iout_max = 10.0f;
+#endif
+
+    g_FOC_Input.Rs    = MOTOR_PHASE_RES;
+    g_FOC_Input.Ls    = MOTOR_PHASE_LS;
+    g_FOC_Input.flux  = MOTOR_FLUXLINK;
+    g_FOC_Input.Tpwm  = PWM_TIM_PULSE_TPWM;
+
 }
 
 /**
@@ -74,6 +82,16 @@ int main(void)
 
   float angle = PI * 0.2f;
 
+#if 0
+  VOLTAGE_DQ_DEF      t_vdq;
+  TRANSF_COS_SIN_DEF  t_cos_sin;
+  float               t_theta = PI / 5;
+  VOLTAGE_ALPHA_BETA_DEF t_v_alpha_beta;
+
+  t_vdq.Vd = 0;
+  t_vdq.Vq = 3.0f;
+#endif
+
   HAL_Init();
 //sys_stm32_clock_init(85, 2, 2, 4, 8);       /* 设置时钟,170Mhz  正点原子*/
   sys_stm32_clock_init(85, 3, 2, 2, 2);       /* 设置时钟,170Mhz */
@@ -88,7 +106,7 @@ int main(void)
 
   TIMER_INIT();     // 调度定时器初始化，用于简单的ms级定时器调度
 
-  trace_info("STM32G474 FOC Test Start \r\n\r\n")
+  trace_info("\r\n STM32G474 FOC Test Start \r\n\r\n")
 
   phase_pwm_start();
 
@@ -112,6 +130,24 @@ int main(void)
 
         gpio_output_set(LED_STAT_PORT, LED_STAT_PIN, led_stat);
         gpio_output_set(TEST_IO_PORT, TEST_IO_PIN, led_stat);
+
+        
+#if 0
+        Angle_To_Cos_Sin(t_theta, &t_cos_sin);
+        Rev_Park_Transf(t_vdq, t_cos_sin, &t_v_alpha_beta);
+        SVPWM_Calc(t_v_alpha_beta, 24.0, g_FOC_Input.Tpwm);
+
+        TIM8->CCR1 = (uint16_t)(g_FOC_Output.Tcmp1);     
+	      TIM8->CCR2 = (uint16_t)(g_FOC_Output.Tcmp2);
+	      TIM8->CCR3 = (uint16_t)(g_FOC_Output.Tcmp3);
+
+        t_theta += PI / 3;
+
+        t_theta = radian_normalize(t_theta);
+
+        trace_debug("t_theta %.3f, alpha %.3f, beta %.3f, CCR1 %lu, CCR2 %lu, CCR3 %lu\r\n", \
+          t_theta, t_v_alpha_beta.Valpha, t_v_alpha_beta.Vbeta, TIM8->CCR1, TIM8->CCR2, TIM8->CCR3);
+#endif
 
 //        sin_cal_speed_compare();
 

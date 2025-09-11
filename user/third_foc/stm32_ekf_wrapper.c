@@ -20,19 +20,24 @@
 //#define LS_PARAMETER     0.001f          //电感
 //#define FLUX_PARAMETER   0.01150f        //磁链
 
-#define RS_PARAMETER     0.2f           //电阻
-#define LS_PARAMETER     0.0004f          //电感
-#define FLUX_PARAMETER   0.0090969f        //磁链
+//原来的
+//#define RS_PARAMETER     0.2f           //电阻
+//#define LS_PARAMETER     0.0004f        //电感
+//#define FLUX_PARAMETER   0.0090969f     //磁链
 
+//cxn
+#define RS_PARAMETER     0.4f           //电阻
+#define LS_PARAMETER     0.0008f        //电感
+#define FLUX_PARAMETER   0.01623f     //磁链
 
 //////电机参数配置（电阻，电感，磁链）
 //#define RS_PARAMETER     0.5f           //电阻
 //#define LS_PARAMETER     0.00558f          //电感
 //#define FLUX_PARAMETER   0.00572f        //磁链
 
-float Rs =RS_PARAMETER ;
-float Ls=LS_PARAMETER;
-float flux=FLUX_PARAMETER;
+float Rs    = 0;
+float Ls    = 0;
+float flux  = 0;
 
 float Q_0_0;
 //float Q_0_1;

@@ -54,7 +54,7 @@ typedef struct {
   real32_T Tcmp1;                      
   real32_T Tcmp2;                      
   real32_T Tcmp3;                      
-  real32_T EKF[4];                     
+  real32_T EKF[4];  //0:i_alpha  1:ibeta  2:角速度omiga  3:转子位置 theta
   real32_T L_RF[3];                    
 } FOC_OUTPUT_DEF;
 
@@ -116,8 +116,8 @@ struct tag_RTM {
 extern FOC_INTERFACE_STATES_DEF FOC_Interface_states;
 
 
-extern FOC_INPUT_DEF  FOC_Input;
-extern FOC_OUTPUT_DEF FOC_Output;
+extern FOC_INPUT_DEF  g_FOC_Input;
+extern FOC_OUTPUT_DEF g_FOC_Output;
 
 
 extern void foc_algorithm_initialize(void);

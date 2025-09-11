@@ -54,9 +54,9 @@ AS_DEFS =
 C_DEFS =  			\
 -DUSE_HAL_DRIVER 	\
 -DSTM32G474xx		\
--DTRACE_ENABLE		\
--DTRACE_LEVEL=7		\
 -DSIMULINK_USE_ARM_MATH		\
+#-DTRACE_ENABLE		\
+#-DTRACE_LEVEL=7		\
 
 # 六步换相启动控制宏
 #-DSIX_STEPS_ENABLE	\
@@ -133,10 +133,10 @@ peripherals/adc.c				\
 user/parameters.c				\
 user/tasks/sensors_task.c		\
 user/tasks/motor_ctrl_task.c	\
-user/tasks/algorithm_task.c		\
 user/src/foc.c					\
 user/src/clark.c				\
 user/src/park.c					\
+user/src/vofa.c					\
 user/third_foc/foc_algorithm.c 	\
 user/third_foc/IIR_LPF.c 		\
 user/third_foc/SMO_PLL.c 		\

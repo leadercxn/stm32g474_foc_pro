@@ -6,18 +6,18 @@
 
 #define SPEED_PID_PERIOD 0.001F
 
-real32_T SPEED_PI_I = 5.0F;
-real32_T SPEED_PI_KB = 0.015F;
+real32_T SPEED_PI_I   = 5.0F;
+real32_T SPEED_PI_KB  = 0.015F;
 real32_T SPEED_PI_LOW_LIMIT = -5.0F;
-real32_T SPEED_PI_P = 0.003F;
+real32_T SPEED_PI_P   = 0.003F;
 real32_T SPEED_PI_UP_LIMIT = 5.0F;
 
                    
-real32_T Speed_Ref;       //速度参考          
-real32_T Speed_Fdk;        //速度反馈          
-real32_T Speed_Pid_Out;    //速度PID输出，也就是Q轴电流环的参考             
+real32_T g_Speed_Ref;        //速度参考          
+real32_T g_Speed_Fdk;        //速度反馈          
+real32_T g_Speed_Pid_Out;    //速度PID输出，也就是Q轴电流环的参考             
 
-SPEED_PID_DEF Speed_Pid;
+SPEED_PID_DEF g_Speed_Pid;
 
 void Speed_Pid_Calc(real32_T ref_temp,real32_T fdb_temp,real32_T* out_temp,SPEED_PID_DEF* current_pid_temp)
 {
@@ -29,30 +29,31 @@ void Speed_Pid_Calc(real32_T ref_temp,real32_T fdb_temp,real32_T* out_temp,SPEED
 
   temp = (error + current_pid_temp->I_Sum) * current_pid_temp->P_Gain;
 
- 
-  if (temp > current_pid_temp->Max_Output) {
+  if (temp > current_pid_temp->Max_Output)
+  {
     *out_temp = current_pid_temp->Max_Output;
-  } else if (temp < current_pid_temp->Min_Output) {
+  }
+  else if (temp < current_pid_temp->Min_Output)
+  {
     *out_temp = current_pid_temp->Min_Output;
-  } else {
+  }
+  else
+  {
     *out_temp = temp;
   }
+
   current_pid_temp->I_Sum += ((*out_temp - temp) * current_pid_temp->B_Gain + current_pid_temp->I_Gain* error) * SPEED_PID_PERIOD;
-
-
-
-
 }
 
 
 void speed_pid_initialize(void)
 {
-  Speed_Pid.P_Gain = SPEED_PI_P;
-  Speed_Pid.I_Gain = SPEED_PI_I;
-  Speed_Pid.B_Gain = SPEED_PI_KB;
-  Speed_Pid.Max_Output = SPEED_PI_UP_LIMIT;
-  Speed_Pid.Min_Output = SPEED_PI_LOW_LIMIT;
-  Speed_Pid.I_Sum = 0.0f;
+  g_Speed_Pid.P_Gain = SPEED_PI_P;
+  g_Speed_Pid.I_Gain = SPEED_PI_I;
+  g_Speed_Pid.B_Gain = SPEED_PI_KB;
+  g_Speed_Pid.Max_Output = SPEED_PI_UP_LIMIT;
+  g_Speed_Pid.Min_Output = SPEED_PI_LOW_LIMIT;
+  g_Speed_Pid.I_Sum = 0.0f;
 }
 
 

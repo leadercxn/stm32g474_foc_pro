@@ -96,7 +96,7 @@ void PLL_control(float Ealfa,float Ebeta,PLL_DEF*PLL_Def)
 	 //we输出滤波
 	IIR_filter(PLL_Def->we ,&PLL_Def->we, &PLL_IIR_LPF_PAR);
 	//电机反转补偿π
-	if((PLL_Def->we<-10.0f)&&(Speed_Ref<0.0f))
+	if((PLL_Def->we<-10.0f)&&(g_Speed_Ref<0.0f))
 	{
 		PLL_Def->theta +=PI;
 

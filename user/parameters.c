@@ -15,7 +15,11 @@ app_param_t g_app_param = {
     .target_iq = 1.0f,
 
     .curr_uq = 0.0f,
+    .curr_iq = 0.0f,
     .curr_theta = 0.0f,
+
+    .iq_acc_dir = ACC_DONE,
+    .is_speed_ring_start = false,
 };
 
 // ekf pi控制器

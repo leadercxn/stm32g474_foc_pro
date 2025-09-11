@@ -18,14 +18,22 @@
 #define PWM_PERIOD      8500        //(SYS_CLK_FREQ / PWM_FREQ)
 #define MAX_PWM_DUTY    ((PWM_PERIOD - 1) * 0.96)  //最大占空比
 
+#define PWM_TIM_PULSE_TPWM  (SYS_CLK_FREQ / (PWM_FREQ  / 2) )   //因为中心对齐，
+
 //电机参数
 #define MOTOR_POLE_PAIRS    2           //电机极对数
-#define MOTOR_PHASE_RES     0.4f        //电机相电阻，单位欧姆
-#define MOTOR_PHASE_LS      0.0008f     //电机相电感，单位亨利
 #define MOTOR_I_MAX         19.80f      //电机最大电流，单位A
 #define MOTOR_RATED_I       6.6f        //电机额定电流，单位A
 #define MOTOR_RATED_V       24.0f       //电机额定电压，单位V
-#define MOTOR_FLUXLINK      0.01623f    //电机磁链常熟
+
+#define MOTOR_PHASE_RES     0.4f        //电机相电阻，单位欧姆
+#define MOTOR_PHASE_LS      0.0008f     //电机相电感，单位亨利
+#define MOTOR_FLUXLINK      0.01623f    //电机磁链常数
+
+// 别人demo参数
+//#define MOTOR_PHASE_RES     0.2f        //电机相电阻，单位欧姆
+//#define MOTOR_PHASE_LS      0.0004f     //电机相电感，单位亨利
+//#define MOTOR_FLUXLINK      0.0090969f  //电机磁链常数
 
 //程序设定参数
 #define MOTOR_SPEED_MAX_RPM     4000  //电机最高转速
@@ -34,9 +42,8 @@
 #define VBUS_VLOT               24.0f //母线电压，单位V
 
 //FOC参数
-#define I_LOOP_EXEC_FREQ        1     //电流环执行频率 1 = 50us
-#define VEL_LOOP_EXEC_FREQ      40    //速度环执行频率 40 * 50 = 2000us = 2ms
-#define FOC_PERIOD              0.0001F
+#define FOC_PERIOD              0.0001f     //FOC运行的时间间隔
+#define SPEED_LOOP_CLOSE_RAD_S  20.0f       //速度环切入闭环的速度  单位: rad/s
 
 #define FIRST_ORDER_LPF(OUT, IN, FAC)  OUT = (1.0f - FAC) * OUT + FAC * IN;  /*一阶滤波 */
 
@@ -66,6 +73,14 @@ typedef enum
     MOTOR_DIR_CCW,     //逆时针
 } motor_dir_e;
 
+typedef enum
+{
+    ACC_DONE,       //变速完成
+    ACC_UP,         //加速
+    ACC_DOWN,       //减速
+    ACC_START,      //开始加速
+} motor_acc_dir_e;
+
 /***************************************** 电机状态结构体 ***********************************************/
 
 // 全局应用参数
@@ -85,14 +100,19 @@ typedef struct
     float       target_iq;                 // q轴电流 单位A
 
     float       curr_uq;            //  当前Uq
+    float       curr_iq;            //  当前Iq
     float       curr_theta;         //  当前角度值
 
-    float       foc_ts;         // FOC计算周期，单位s
+    float       foc_ts;             // FOC计算周期，单位s
 
     float       ekf_theta;
     float       ekf_angle_speed;
     float       ekf_u_alpha;
     float       ekf_u_beta;
+
+
+    motor_acc_dir_e     iq_acc_dir;     // iq加速的方向,  0：iq达标  1：iq加速  2:iq减速 4:开始加速
+    bool        is_speed_ring_start;    // 速度环开始标记
 } app_param_t;
 
 extern app_param_t g_app_param;

@@ -19,9 +19,9 @@
 
 
 
-extern real32_T Speed_Ref;                 
-extern real32_T Speed_Fdk;                 
-extern real32_T Speed_Pid_Out;             
+extern real32_T g_Speed_Ref;                 
+extern real32_T g_Speed_Fdk;                 
+extern real32_T g_Speed_Pid_Out;             
 
 typedef struct
 {
@@ -34,7 +34,7 @@ typedef struct
   real32_T I_Sum;
 }SPEED_PID_DEF;
 
-extern SPEED_PID_DEF Speed_Pid;
+extern SPEED_PID_DEF g_Speed_Pid;
 
 extern void speed_pid_initialize(void);
 extern void Speed_Pid_Calc(real32_T ref_temp,real32_T fdb_temp,real32_T* out_temp,SPEED_PID_DEF* current_pid_temp);
