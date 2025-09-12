@@ -98,20 +98,26 @@ int timer8_init(void)
     {
         Error_Handler();
     }
+//    __HAL_TIM_DISABLE_OCxPRELOAD(&m_timer8_handle, TIM_CHANNEL_1);
+
     if (HAL_TIM_PWM_ConfigChannel(&m_timer8_handle, &oc_cfg, TIM_CHANNEL_2) != HAL_OK)
     {
         Error_Handler();
     }
+//    __HAL_TIM_DISABLE_OCxPRELOAD(&m_timer8_handle, TIM_CHANNEL_2);
+
     if (HAL_TIM_PWM_ConfigChannel(&m_timer8_handle, &oc_cfg, TIM_CHANNEL_3) != HAL_OK)
     {
         Error_Handler();
     }
+//    __HAL_TIM_DISABLE_OCxPRELOAD(&m_timer8_handle, TIM_CHANNEL_3);
 
     oc_cfg.Pulse = (PWM_PERIOD - 15); //用来触发 adc 采集电流
     if (HAL_TIM_PWM_ConfigChannel(&m_timer8_handle, &oc_cfg, TIM_CHANNEL_4) != HAL_OK)
     {
         Error_Handler();
     }
+//    __HAL_TIM_DISABLE_OCxPRELOAD(&m_timer8_handle, TIM_CHANNEL_4);
 
     //deadtime
     break_deadtime_cfg.OffStateRunMode  = TIM_OSSR_DISABLE;
@@ -214,8 +220,6 @@ void phase_pwm_set(uint32_t u, uint32_t v, uint32_t w)
 
 void phase_pwm_start(void)
 {
-    
-
     HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_2);
     HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_3);
@@ -239,5 +243,9 @@ void phase_pwm_stop(void)
     HAL_TIM_PWM_Stop(&m_timer8_handle, TIM_CHANNEL_3);
     HAL_TIMEx_PWMN_Stop(&m_timer8_handle, TIM_CHANNEL_1);
     HAL_TIMEx_PWMN_Stop(&m_timer8_handle, TIM_CHANNEL_2);
-    HAL_TIMEx_PWMN_Stop(&m_timer8_handle, TIM_CHANNEL_3); 
+    HAL_TIMEx_PWMN_Stop(&m_timer8_handle, TIM_CHANNEL_3);
+
+    TIM8->CCR1 = 0;
+	TIM8->CCR2 = 0;
+	TIM8->CCR3 = 0;
 }

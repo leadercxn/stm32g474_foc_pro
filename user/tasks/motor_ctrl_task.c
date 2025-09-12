@@ -122,8 +122,6 @@ static void motor_acc_start_handle(void)
                         torque_set(uq, 0, shaft_angle);
                     }
 
-//                    g_app_param.motor_speed_real = (uint16_t)((60.0f * 1000.0f * PI_DIV_3) / (per_acc_hold_ticks * DOUBLE_PI));     //计算当前速度，单位RPM
-
 // 跳转到滑膜观测器 & 锁相
 #if 0
                     motor_start_const_cnt++;
@@ -356,6 +354,7 @@ void motor_run(void)
  */
 static void vofa_send(void)
 {
+
 #if 0
     vofa_param[0] = adc_sample_physical_value_get(ADC_CH_U_I);
     vofa_param[1] = adc_sample_physical_value_get(ADC_CH_V_I);
@@ -374,29 +373,28 @@ static void vofa_send(void)
                         vofa_param[6], \
                         vofa_param[7]);
 #endif
+
     static uint8_t tx_idx = 1;
 
     switch (tx_idx)
     {
         case 0:
-            justfloat_update(g_FOC_Output.EKF[3], 0);  //卡尔曼估算角度
-	        justfloat_update(PLL_def.theta, 0);      //SMO估算角度
-	        justfloat_update(g_FOC_Output.EKF[2], 0);  //卡尔曼估算速度
-	        justfloat_update(PLL_def.we, 1);         //SMO角速度
+            justfloat_update(g_FOC_Output.EKF[3], 0);   //卡尔曼估算角度
+	        justfloat_update(PLL_def.theta, 0);         //SMO估算角度
+	        justfloat_update(g_FOC_Output.EKF[2], 0);   //卡尔曼估算速度
+	        justfloat_update(PLL_def.we, 1);            //SMO角速度
         break;
     
         case 1:
             justfloat_update(g_FOC_Input.Iq_ref,  0);
-            justfloat_update(g_FOC_Output.EKF[3], 0);  //卡尔曼估算角度
-            justfloat_update(g_FOC_Output.EKF[2], 0);  //卡尔曼估算速度
+            justfloat_update(g_FOC_Output.EKF[3], 0);   //卡尔曼估算角度
+            justfloat_update(g_FOC_Output.EKF[2], 0);   //卡尔曼估算速度
+//            justfloat_update(PLL_def.theta, 0);         //SMO估算角度
+//            justfloat_update(PLL_def.we,    0);            //SMO角速度
 
             justfloat_update(adc_sample_physical_value_get(ADC_CH_U_I), 0);
 	        justfloat_update(adc_sample_physical_value_get(ADC_CH_V_I), 0);
 	        justfloat_update(adc_sample_physical_value_get(ADC_CH_W_I), 1);
-
-//            justfloat_update(PLL_def.theta, 0);      //SMO估算角度
-//            justfloat_update(PLL_def.we, 1);         //SMO角速度
-
 
         break;
 
@@ -429,8 +427,8 @@ int motor_ctrl_task(void)
         init_done = true;
         timer8_irq_cb_register(timer8_irq_cb_handler);      //回调函数注册到 timer8 的中断函数里面
 
-        TIMER_CREATE(&m_speed_pid_timer, false, true, speed_pid_timer_handler); //循环定时器，立马执行
-        TIMER_START(m_speed_pid_timer, 1);  // 1Kz的执行频率
+        TIMER_CREATE(&m_speed_pid_timer, false, true, speed_pid_timer_handler);     //循环定时器，立马执行
+        TIMER_START(m_speed_pid_timer, 1);                                          // 1Kz的执行频率
     }
 
     // 串口控制电机
@@ -512,7 +510,17 @@ int motor_ctrl_task(void)
             break;
 
         case MOTOR_STA_STOPPING:
+            if(g_app_param.motor_sta != g_app_param.pre_motor_sta)  //开始停机
+            {
+                phase_pwm_stop();
+
+                g_app_param.is_speed_ring_start = false;            //参数恢复
+                g_app_param.curr_iq = 0.0f;
+            }
+
             gpio_output_set(PWM_EN_PORT, PWM_EN_PIN, 0);
+
+            g_app_param.motor_sta = MOTOR_STA_STOP;
             break;
 
         case MOTOR_STA_RUNNING:
@@ -520,8 +528,10 @@ int motor_ctrl_task(void)
             break;
 
         case MOTOR_STA_STARTING:
-            if(g_app_param.motor_sta != g_app_param.pre_motor_sta)  // 每一次启动都要foc参数初始化
+            if(g_app_param.motor_sta != g_app_param.pre_motor_sta)  //每一次启动都要foc参数初始化
             {
+                phase_pwm_start();
+
                 foc_algorithm_initialize();   //FOC 算法参数初始化
             }
 
@@ -533,10 +543,9 @@ int motor_ctrl_task(void)
             break;
     }
 
-//    if((g_app_param.motor_sta == MOTOR_STA_STARTING) || (g_app_param.motor_sta == MOTOR_STA_RUNNING))
-    {
+#ifndef TRACE_ENABLE
         vofa_send();    //vofa 显示
-    }
+#endif
 
     if(g_app_param.motor_sta != g_app_param.pre_motor_sta)
     {

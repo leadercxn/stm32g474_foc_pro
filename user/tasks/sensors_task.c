@@ -131,60 +131,18 @@ static void adc_inj_data_to_physical_value(void)
     result = temp * (float)(3.3f / 4.0960f / 0.12f);
     result *= 0.001f;
     adc_sample_physical_value[ADC_CH_U_I] = result;
-#if 0
-    if(temp >= 0)
-    {
-        result = temp * (float)(3.3f / 4.0960f / 0.12f);
-
-        result *= 0.001f;
-
-        adc_sample_physical_value[ADC_CH_U_I] = result;
-    }
-    else
-    {
-        adc_sample_physical_value[ADC_CH_U_I] = 0.0f;
-    }
-#endif
 
     // V_I
     temp = adc_inj_origin_data[1] - adc_quiescent_i_offset_data[1];
     result = temp * (float)(3.3f / 4.0960f / 0.12f);
     result *= 0.001f;
     adc_sample_physical_value[ADC_CH_V_I] = result;
-#if 0
-    if(temp >= 0)
-    {
-        result = temp * (float)(3.3f / 4.0960f / 0.12f);
-
-        result *= 0.001f;
-
-        adc_sample_physical_value[ADC_CH_V_I] = result;
-    }
-    else
-    {
-        adc_sample_physical_value[ADC_CH_V_I] = 0.0f;
-    }
-#endif
 
     // W_I
     temp = adc_inj_origin_data[2] - adc_quiescent_i_offset_data[2];
     result = temp * (float)(3.3f / 4.0960f / 0.12f);
     result *= 0.001f;
     adc_sample_physical_value[ADC_CH_W_I] = result;
-#if 0
-    if(temp >= 0)
-    {
-        result = temp * (float)(3.3f / 4.0960f / 0.12f);
-
-        result *= 0.001f;
-
-        adc_sample_physical_value[ADC_CH_W_I] = result;
-    }
-    else
-    {
-        adc_sample_physical_value[ADC_CH_W_I] = 0.0f;
-    }
-#endif
 }
 
 //static uint16_t test_ticks = 0;

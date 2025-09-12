@@ -43,7 +43,6 @@ static void param_init(void)
     g_FOC_Input.Ls    = MOTOR_PHASE_LS;
     g_FOC_Input.flux  = MOTOR_FLUXLINK;
     g_FOC_Input.Tpwm  = PWM_TIM_PULSE_TPWM;
-
 }
 
 /**
@@ -165,7 +164,6 @@ int main(void)
         adc_sample_physical_value_get(ADC_CH_V_I), adc_sample_physical_value_get(ADC_CH_W_I),   \
         adc_sample_physical_value_get(ADC_CH_VBUS), adc_sample_physical_value_get(ADC_CH_TEMP));
 
-//        trace_debug("motor real speed = %d\r\n", g_app_param.motor_speed_real);
 #endif
 
 // 测试svpwm

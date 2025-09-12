@@ -96,8 +96,8 @@ typedef struct
     uint16_t    motor_speed_set;    // 电机设定速度，单位RPM
     uint16_t    motor_speed_real;   // 电机实际速度，单位RPM
 
-    float       target_uq;                 // q轴电压 单位V
-    float       target_iq;                 // q轴电流 单位A
+    float       target_uq;          // q轴电压 单位V
+    float       target_iq;          // q轴电流 单位A
 
     float       curr_uq;            //  当前Uq
     float       curr_iq;            //  当前Iq
