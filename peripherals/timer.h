@@ -1,8 +1,6 @@
 #ifndef TIMER_H__
 #define TIMER_H__
 
-extern uint64_t g_tim8_50us_ticks;
-
 typedef void (*timer8_irq_cb_t)(void);
 
 int timer8_init(void);

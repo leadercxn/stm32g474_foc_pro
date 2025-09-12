@@ -41,18 +41,6 @@ int adc_init(void)
         Error_Handler();
     }
 
-#if 0
-    ADC_MultiModeTypeDef        multimode = {0};
-
-    multimode.Mode = ADC_MODE_INDEPENDENT;
-    if (HAL_ADCEx_MultiModeConfigChannel(&m_adc2_handle, &multimode) != HAL_OK)
-    {
-        Error_Handler();
-    }
-
-    trace_debug("multimode init done\r\n");
-#endif
-
     //规则通道
     channle_cfg.Channel      = ADC_CHANNEL_3;
     channle_cfg.Rank         = ADC_REGULAR_RANK_1;
@@ -108,7 +96,7 @@ int adc_init(void)
     injection_ch_cfg.QueueInjectedContext           = DISABLE;
     injection_ch_cfg.ExternalTrigInjecConv          = ADC_INJECTED_SOFTWARE_START;
     injection_ch_cfg.ExternalTrigInjecConvEdge      = ADC_EXTERNALTRIGINJECCONV_EDGE_NONE;
-//    injection_ch_cfg.ExternalTrigInjecConv          = ADC_EXTERNALTRIGINJEC_T8_CC4;
+//    injection_ch_cfg.ExternalTrigInjecConv          = ADC_EXTERNALTRIGINJEC_T8_CC4;          // 不知为何，T8 CH4总是触发不了ADC 注入通道的启动
 //    injection_ch_cfg.ExternalTrigInjecConvEdge      = ADC_EXTERNALTRIGINJECCONV_EDGE_RISING;
     injection_ch_cfg.InjecOversamplingMode          = DISABLE;
     if (HAL_ADCEx_InjectedConfigChannel(&m_adc2_handle, &injection_ch_cfg) != HAL_OK)
@@ -208,8 +196,6 @@ void DMA1_Channel1_IRQHandler(void)
 void ADC1_2_IRQHandler(void)
 {
     HAL_ADC_IRQHandler(&m_adc2_handle);
-
-//    HAL_ADCEx_InjectedStart_IT(&m_adc2_handle); 
 }
 
 void adc_reg_start(uint32_t *p_dma_adc_rx_data)

@@ -22,8 +22,14 @@
 #define LED_STAT_PORT               GPIOC
 #define LED_STAT_PIN                GPIO_PIN_13
 
-#define TEST_IO_PORT                GPIOC
-#define TEST_IO_PIN                 GPIO_PIN_1
+//辅助IO，用来监控adc电流采样的时间点
+#define TEST0_IO_PORT               GPIOC
+#define TEST0_IO_PIN                GPIO_PIN_0
+#define TEST1_IO_PORT               GPIOC
+#define TEST1_IO_PIN                GPIO_PIN_1
+//保留IO
+#define TEST2_IO_PORT               GPIOC
+#define TEST2_IO_PIN                GPIO_PIN_2
 
 #define PWM_UH_PORT                 GPIOC
 #define PWM_UH_PIN                  GPIO_PIN_6  //UH

@@ -9,8 +9,6 @@ extern void Error_Handler(void);
 
 static TIM_HandleTypeDef m_timer8_handle;
 
-uint64_t g_tim8_50us_ticks = 0;  //50us定时器计数 1= 50us
-
 static timer8_irq_cb_t m_timer8_cb_handler = NULL;
 
 static void pwm_io_init(void)
@@ -51,7 +49,11 @@ int timer8_init(void)
     //timer base cfg
     m_timer8_handle.Instance                = TIM8;
     m_timer8_handle.Init.Prescaler          = 0;                                //不分频
-    m_timer8_handle.Init.CounterMode        = TIM_COUNTERMODE_CENTERALIGNED1;   //中心对齐模式2
+    //计数器交替地向上和向下计数。配置为输出的通道(TIMx_CCMRx寄存器中CCxS=00)的输出比较中断标志位
+    // 模式1 -- 只在计数器向下计数时被设置。
+    // 模式2 -- 只在计数器向上计数时被设置。
+    // 模式3 -- 在计数器向上和向下计数时均被设置。
+    m_timer8_handle.Init.CounterMode        = TIM_COUNTERMODE_CENTERALIGNED1;   //中心对齐模式1
     m_timer8_handle.Init.Period             = PWM_PERIOD;                       //20K
     m_timer8_handle.Init.ClockDivision      = TIM_CLOCKDIVISION_DIV2;
     m_timer8_handle.Init.RepetitionCounter  = 0;
@@ -74,7 +76,7 @@ int timer8_init(void)
     }
 
     //master cfg
-    master_cfg.MasterOutputTrigger  = TIM_TRGO_OC4REF;  //  OC4REF信号被用于作为触发输出(TRGO)
+    master_cfg.MasterOutputTrigger  = TIM_TRGO_UPDATE;  //  OC4REF信号被用于作为触发输出(TRGO)
     master_cfg.MasterOutputTrigger2 = TIM_TRGO2_RESET;
     master_cfg.MasterSlaveMode      = TIM_MASTERSLAVEMODE_DISABLE;
     if (HAL_TIMEx_MasterConfigSynchronization(&m_timer8_handle, &master_cfg) != HAL_OK)
@@ -83,6 +85,8 @@ int timer8_init(void)
     }
 
     //OC cfg
+    //PWM模式1－ 在向上计数时，一旦TIMx_CNT<TIMx_CCR1时通道1为有效电平，否则为无效电平；在向下计数时，一旦TIMx_CNT>TIMx_CCR1时通道1为无效电平(OC1REF=0)，否则为有效电平(OC1REF=1)。
+    //PWM模式2－ 在向上计数时，一旦TIMx_CNT<TIMx_CCR1时通道1为无效电平，否则为有效电平；在向下计数时，一旦TIMx_CNT>TIMx_CCR1时通道1为有效电平，否则为无效电平。
     oc_cfg.OCMode       = TIM_OCMODE_PWM1;
     oc_cfg.Pulse        = 0;
     oc_cfg.OCPolarity   = TIM_OCPOLARITY_HIGH;
@@ -103,7 +107,7 @@ int timer8_init(void)
         Error_Handler();
     }
 
-    oc_cfg.Pulse = (PWM_PERIOD - 10); //用来触发 adc 采集
+    oc_cfg.Pulse = (PWM_PERIOD - 15); //用来触发 adc 采集电流
     if (HAL_TIM_PWM_ConfigChannel(&m_timer8_handle, &oc_cfg, TIM_CHANNEL_4) != HAL_OK)
     {
         Error_Handler();
@@ -138,10 +142,13 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
 {
   if(tim_baseHandle->Instance == TIM8)
   {
-    __HAL_RCC_TIM8_CLK_ENABLE();
+        __HAL_RCC_TIM8_CLK_ENABLE();
 
-    HAL_NVIC_SetPriority(TIM8_UP_IRQn, 2, 0);   //对应PWM1模式上升中断
-    HAL_NVIC_EnableIRQ(TIM8_UP_IRQn);
+//    HAL_NVIC_SetPriority(TIM8_UP_IRQn, 2, 0);   //对应PWM1模式更新中断
+//    HAL_NVIC_EnableIRQ(TIM8_UP_IRQn);
+
+        HAL_NVIC_SetPriority(TIM8_CC_IRQn, 1, 0);
+        HAL_NVIC_EnableIRQ(TIM8_CC_IRQn);
   }
 }
 
@@ -156,6 +163,7 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
 
 }
 
+//TIM8 的 Update更新中断
 void TIM8_UP_IRQHandler(void)
 {
     HAL_TIM_IRQHandler(&m_timer8_handle);
@@ -163,12 +171,16 @@ void TIM8_UP_IRQHandler(void)
     //自定义
 }
 
+//TIM8的 CC Capture Compare 中断
+void TIM8_CC_IRQHandler(void)
+{
+    HAL_TIM_IRQHandler(&m_timer8_handle);
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if(htim->Instance == TIM8)  // 20K 的中断频率
     {
-        g_tim8_50us_ticks++;
-
         if(m_timer8_cb_handler != NULL)
         {
             m_timer8_cb_handler();
@@ -202,8 +214,7 @@ void phase_pwm_set(uint32_t u, uint32_t v, uint32_t w)
 
 void phase_pwm_start(void)
 {
-    HAL_TIM_Base_Start_IT(&m_timer8_handle);    //开启定时器以及中断
-//    HAL_TIM_Base_Start(&m_timer8_handle);     //开启定时器不开中断
+    
 
     HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_2);
@@ -213,7 +224,10 @@ void phase_pwm_start(void)
     HAL_TIMEx_PWMN_Start(&m_timer8_handle, TIM_CHANNEL_3);
     
 
-    HAL_TIM_PWM_Start(&m_timer8_handle, TIM_CHANNEL_4);
+    HAL_TIM_PWM_Start_IT(&m_timer8_handle, TIM_CHANNEL_4);
+
+    HAL_TIM_Base_Start_IT(&m_timer8_handle);    //开启定时器以及中断
+//    HAL_TIM_Base_Start(&m_timer8_handle);     //开启定时器不开中断
 }
 
 void phase_pwm_stop(void)

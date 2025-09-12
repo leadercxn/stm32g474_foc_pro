@@ -11,6 +11,7 @@ real32_T D_PI_KB = 15.0F;
 real32_T D_PI_LOW_LIMIT = -10.0F;
 real32_T D_PI_P = 3.199F;
 real32_T D_PI_UP_LIMIT = 10.0F;
+
 real32_T Q_PI_I = 2282.8F;
 real32_T Q_PI_KB = 15.0F;
 real32_T Q_PI_LOW_LIMIT = -10.0F;
@@ -89,9 +90,6 @@ extern "C" {
   
 }
 #endif
-
-extern float float_test1;
-extern float float_test2;
 
 CURRENT_ABC_DEF Current_Iabc;
 CURRENT_ALPHA_BETA_DEF Current_Ialpha_beta;

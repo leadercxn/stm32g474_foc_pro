@@ -118,7 +118,7 @@ extern FOC_INTERFACE_STATES_DEF FOC_Interface_states;
 
 extern FOC_INPUT_DEF  g_FOC_Input;
 extern FOC_OUTPUT_DEF g_FOC_Output;
-
+extern VOLTAGE_DQ_DEF Voltage_DQ;
 
 extern void foc_algorithm_initialize(void);
 extern void foc_algorithm_step(void);

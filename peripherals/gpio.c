@@ -10,7 +10,7 @@ int bsp_gpio_init(void)
     __HAL_RCC_GPIOC_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
 
-    gpio_init_struct.Pin     = LED_STAT_PIN | TEST_IO_PIN;
+    gpio_init_struct.Pin     = LED_STAT_PIN | TEST0_IO_PIN | TEST1_IO_PIN | TEST2_IO_PIN ;
     gpio_init_struct.Mode    = GPIO_MODE_OUTPUT_PP;
     gpio_init_struct.Pull    = GPIO_NOPULL;
     gpio_init_struct.Speed   = GPIO_SPEED_FREQ_LOW;

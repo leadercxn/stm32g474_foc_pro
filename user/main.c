@@ -129,8 +129,6 @@ int main(void)
         }
 
         gpio_output_set(LED_STAT_PORT, LED_STAT_PIN, led_stat);
-        gpio_output_set(TEST_IO_PORT, TEST_IO_PIN, led_stat);
-
         
 #if 0
         Angle_To_Cos_Sin(t_theta, &t_cos_sin);
@@ -194,18 +192,6 @@ int main(void)
                  adc_sample_physical_value_get(ADC_CH_V_VOLT), adc_sample_physical_value_get(ADC_CH_W_VOLT), \
                  adc_sample_physical_value_get(ADC_CH_U_I), adc_sample_physical_value_get(ADC_CH_V_I),     \
                  adc_sample_physical_value_get(ADC_CH_W_I));
-      }
-#endif
-
-#if 0
-      uint64_t old_50us_ticks = 0;
-
-      if(g_tim8_50us_ticks - old_50us_ticks > 1000)   //50 ms定时器任务
-      {
-          old_50us_ticks = g_tim8_50us_ticks;
-
-          trace_debug("50us ticks %llu, sys ticks %lu\r\n", g_tim8_50us_ticks, sys_time_ms_get());
-
       }
 #endif
 

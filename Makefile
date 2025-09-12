@@ -56,10 +56,7 @@ C_DEFS =  			\
 -DSTM32G474xx		\
 -DSIMULINK_USE_ARM_MATH		\
 #-DTRACE_ENABLE		\
-#-DTRACE_LEVEL=7		\
-
-# 六步换相启动控制宏
-#-DSIX_STEPS_ENABLE	\
+#-DTRACE_LEVEL=7	\
 
 
 # AS includes

@@ -12,7 +12,7 @@
 #include "trace.h"
 
 #define SENSORS_TASK_PERIOD_MS      500  //
-#define ADC_I_OFFSET_SAMP_TIMES     25   //静态电流采样次数
+#define ADC_I_OFFSET_SAMP_TIMES     50   //静态电流采样次数
 
 static uint16_t adc_reg_origin_data[ADC_TOTAL_COLLECT_NUM] = {0};                          //adc规则通道采样原始数据
 static uint16_t adc_reg_average_data[ADC_REG_CHAN_NUM] = {0};                              //adc规则通道采样平均数据
@@ -127,6 +127,11 @@ static void adc_inj_data_to_physical_value(void)
 
     // U_I
     temp = adc_inj_origin_data[0] - adc_quiescent_i_offset_data[0];
+
+    result = temp * (float)(3.3f / 4.0960f / 0.12f);
+    result *= 0.001f;
+    adc_sample_physical_value[ADC_CH_U_I] = result;
+#if 0
     if(temp >= 0)
     {
         result = temp * (float)(3.3f / 4.0960f / 0.12f);
@@ -139,9 +144,14 @@ static void adc_inj_data_to_physical_value(void)
     {
         adc_sample_physical_value[ADC_CH_U_I] = 0.0f;
     }
+#endif
 
     // V_I
     temp = adc_inj_origin_data[1] - adc_quiescent_i_offset_data[1];
+    result = temp * (float)(3.3f / 4.0960f / 0.12f);
+    result *= 0.001f;
+    adc_sample_physical_value[ADC_CH_V_I] = result;
+#if 0
     if(temp >= 0)
     {
         result = temp * (float)(3.3f / 4.0960f / 0.12f);
@@ -154,9 +164,14 @@ static void adc_inj_data_to_physical_value(void)
     {
         adc_sample_physical_value[ADC_CH_V_I] = 0.0f;
     }
+#endif
 
     // W_I
     temp = adc_inj_origin_data[2] - adc_quiescent_i_offset_data[2];
+    result = temp * (float)(3.3f / 4.0960f / 0.12f);
+    result *= 0.001f;
+    adc_sample_physical_value[ADC_CH_W_I] = result;
+#if 0
     if(temp >= 0)
     {
         result = temp * (float)(3.3f / 4.0960f / 0.12f);
@@ -169,6 +184,7 @@ static void adc_inj_data_to_physical_value(void)
     {
         adc_sample_physical_value[ADC_CH_W_I] = 0.0f;
     }
+#endif
 }
 
 //static uint16_t test_ticks = 0;
@@ -178,8 +194,6 @@ static void adc_inj_data_to_physical_value(void)
  */
 int sensors_task(void)
 {
-    static uint32_t sensors_tasks_ticks = 0;
-
     static uint32_t quiescent_i_cal_ticks = 0;
 
     static bool is_init = false;
@@ -205,7 +219,7 @@ int sensors_task(void)
             quiescent_i_adc_buff[2][quiescent_i_samp_index] = adc_inj_origin_data[2];
 
             quiescent_i_samp_index++;
-            if(quiescent_i_samp_index > ADC_I_OFFSET_SAMP_TIMES)                //每50次统计一次静态值 10 * 25
+            if(quiescent_i_samp_index > ADC_I_OFFSET_SAMP_TIMES)                //每50次统计一次静态值 10 * 1000
             {
                 quiescent_i_samp_index = 0;                                     //重置采样索引
 
@@ -224,11 +238,6 @@ int sensors_task(void)
                 }
             }
         }
-    }
-
-    if(IS_PRE_MINUS_MID_OVER_POST(sys_time_ms_get(), sensors_tasks_ticks, SENSORS_TASK_PERIOD_MS))
-    {
-
     }
 
 #if 0
@@ -253,12 +262,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
     if (hadc->Instance == ADC2) 
     {
-        adc_reg_stop();  //停止DMA传输
+        adc_reg_stop();                                         //停止DMA传输
 
         adc_reg_origin_data_average_handler(adc_reg_origin_data, adc_reg_average_data, ADC_REG_CHAN_NUM, ADC_SAMPLE_NUM);  //对采集到的原始数据进行平均化处理
-        adc_reg_average_data_to_physical_value();             //将平均化后的数据转换为物理量
+        adc_reg_average_data_to_physical_value();               //将平均化后的数据转换为物理量
 
-        adc_reg_start((uint32_t *)adc_reg_origin_data);  //重新启动DMA传输
+        adc_reg_start((uint32_t *)adc_reg_origin_data);         //重新启动DMA传输
     }
 }
 
@@ -271,6 +280,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
     if (hadc->Instance == ADC2)
     {
+        gpio_output_set(TEST0_IO_PORT, TEST0_IO_PIN, 1);
+
         adc_inj_origin_data[0] = HAL_ADCEx_InjectedGetValue(&m_adc2_handle, ADC_INJECTED_RANK_1); //U电流
         adc_inj_origin_data[1] = HAL_ADCEx_InjectedGetValue(&m_adc2_handle, ADC_INJECTED_RANK_2); //V电流
         adc_inj_origin_data[2] = HAL_ADCEx_InjectedGetValue(&m_adc2_handle, ADC_INJECTED_RANK_3); //W电流
@@ -283,6 +294,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         {
             motor_run();
         }
+
+        gpio_output_set(TEST0_IO_PORT, TEST0_IO_PIN, 0);
+        gpio_output_set(TEST1_IO_PORT, TEST1_IO_PIN, 0);
     }
 }
 

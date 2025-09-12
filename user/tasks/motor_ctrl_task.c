@@ -233,20 +233,17 @@ static void motor_algorithm_handle(void)
         }
 }
 
+uint16_t tim8_irq_cnt = 0;
 /**
- * timer8 中断回调函数 20KHz的执行频率
+ * timer8 CCH4 中断回调函数 10KHz的执行频率
  */
 static void timer8_irq_cb_handler(void)
 {
-    static uint8_t exec_cnt = 0;
+    tim8_irq_cnt++;
 
-    exec_cnt++;
+    gpio_output_set(TEST1_IO_PORT, TEST1_IO_PIN, 1);
+    adc_inj_start();        //每一次中断触发一次电流采集 10K 的执行频率
 
-    if(exec_cnt >= 2)
-    {
-        exec_cnt = 0;
-
-        adc_inj_start();        //每一次中断触发一次电流采集 10K 的执行频率
 /**
  * 原来cxn的启动 和 EKF 观测
  */
@@ -254,8 +251,6 @@ static void timer8_irq_cb_handler(void)
         motor_acc_start_handle();
         motor_algorithm_handle();
 #endif
-
-    }
 }
 
 /**
@@ -380,7 +375,6 @@ static void vofa_send(void)
                         vofa_param[7]);
 #endif
     static uint8_t tx_idx = 1;
-    static float   angle = 0;
 
     switch (tx_idx)
     {
@@ -392,25 +386,18 @@ static void vofa_send(void)
         break;
     
         case 1:
-//          justfloat_update(adc_sample_physical_value_get(ADC_CH_U_I), 0);
-//	        justfloat_update(adc_sample_physical_value_get(ADC_CH_V_I), 0);
-//	        justfloat_update(adc_sample_physical_value_get(ADC_CH_W_I), 0);
-//	        justfloat_update(adc_sample_physical_value_get(ADC_CH_VBUS),1);
-
             justfloat_update(g_FOC_Input.Iq_ref,  0);
             justfloat_update(g_FOC_Output.EKF[3], 0);  //卡尔曼估算角度
-            justfloat_update(g_FOC_Output.EKF[2], 1);  //卡尔曼估算速度
+            justfloat_update(g_FOC_Output.EKF[2], 0);  //卡尔曼估算速度
+
+            justfloat_update(adc_sample_physical_value_get(ADC_CH_U_I), 0);
+	        justfloat_update(adc_sample_physical_value_get(ADC_CH_V_I), 0);
+	        justfloat_update(adc_sample_physical_value_get(ADC_CH_W_I), 1);
+
 //            justfloat_update(PLL_def.theta, 0);      //SMO估算角度
 //            justfloat_update(PLL_def.we, 1);         //SMO角速度
 
-#if 0
-            angle += 0.001f;
 
-            angle = radian_normalize(angle);
-
-            justfloat_update(angle, 0);
-            justfloat_update(3 * sinf(angle),1);
-#endif
         break;
 
         default:
@@ -555,6 +542,18 @@ int motor_ctrl_task(void)
     {
         g_app_param.pre_motor_sta = g_app_param.motor_sta;
     }
+
+#if 0
+    if(tim8_irq_cnt >= 10000)
+    {
+        tim8_irq_cnt = 0;
+
+        trace_debug("sys time ms %lu\r\n", sys_time_ms_get());
+
+    }
+#endif
+
+    
 
     return 0;
 }
