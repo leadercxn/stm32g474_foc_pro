@@ -451,6 +451,7 @@ int motor_ctrl_task(void)
         else if(usart1_rx_data.cmd == 1)  //启动
         {
             g_app_param.motor_sta   = MOTOR_STA_STARTING;
+
             g_app_param.iq_acc_dir  = ACC_START;
 
             trace_debug("motor start\r\n");
@@ -516,6 +517,7 @@ int motor_ctrl_task(void)
 
                 g_app_param.is_speed_ring_start = false;            //参数恢复
                 g_app_param.curr_iq = 0.0f;
+                g_app_param.iq_acc_dir = ACC_DONE;
             }
 
             gpio_output_set(PWM_EN_PORT, PWM_EN_PIN, 0);
@@ -530,9 +532,9 @@ int motor_ctrl_task(void)
         case MOTOR_STA_STARTING:
             if(g_app_param.motor_sta != g_app_param.pre_motor_sta)  //每一次启动都要foc参数初始化
             {
-                phase_pwm_start();
-
                 foc_algorithm_initialize();   //FOC 算法参数初始化
+
+                phase_pwm_start();
             }
 
             gpio_output_set(PWM_EN_PORT, PWM_EN_PIN, 1);

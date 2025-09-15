@@ -26,14 +26,14 @@
 #define MOTOR_RATED_I       6.6f        //电机额定电流，单位A
 #define MOTOR_RATED_V       24.0f       //电机额定电压，单位V
 
-#define MOTOR_PHASE_RES     0.4f        //电机相电阻，单位欧姆
-#define MOTOR_PHASE_LS      0.0008f     //电机相电感，单位亨利
-#define MOTOR_FLUXLINK      0.01623f    //电机磁链常数
+//#define MOTOR_PHASE_RES     0.4f        //电机相电阻，单位欧姆
+//#define MOTOR_PHASE_LS      0.0008f     //电机相电感，单位亨利
+//#define MOTOR_FLUXLINK      0.01623f    //电机磁链常数
 
 // 别人demo参数
-//#define MOTOR_PHASE_RES     0.2f        //电机相电阻，单位欧姆
-//#define MOTOR_PHASE_LS      0.0004f     //电机相电感，单位亨利
-//#define MOTOR_FLUXLINK      0.0090969f  //电机磁链常数
+#define MOTOR_PHASE_RES     0.2f        //电机相电阻，单位欧姆
+#define MOTOR_PHASE_LS      0.0004f     //电机相电感，单位亨利
+#define MOTOR_FLUXLINK      0.0090969f  //电机磁链常数
 
 //程序设定参数
 #define MOTOR_SPEED_MAX_RPM     4000  //电机最高转速
