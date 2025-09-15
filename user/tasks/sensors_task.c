@@ -247,10 +247,19 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         adc_inj_data_to_physical_value();
 
 //        test_ticks++;
+        
 
         if((g_app_param.motor_sta == MOTOR_STA_STARTING) || (g_app_param.motor_sta == MOTOR_STA_RUNNING))     //电机在非停机状态下都要运行
         {
-            motor_run();
+            //motor_run();
+
+//VF
+#if 1
+            g_app_param.curr_theta += g_app_param.target_step_angle;
+            g_app_param.curr_theta = radian_normalize(g_app_param.curr_theta);
+            motor_vf_run();
+#endif
+
         }
 
         gpio_output_set(TEST0_IO_PORT, TEST0_IO_PIN, 0);

@@ -11,8 +11,8 @@ app_param_t g_app_param = {
     .motor_speed_set    = 20,
     .motor_speed_real   = 0,
 
-    .target_uq = 1.0f,
-    .target_iq = 1.0f,
+    .target_uq = 0.5f,
+    .target_iq = 0.5f,
 
     .curr_uq = 0.0f,
     .curr_iq = 0.0f,

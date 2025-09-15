@@ -49,15 +49,6 @@ typedef struct
 
 float   vofa_param[12] = {0.0f};
 
-typedef struct
-{
-    uint8_t     cmd;            //命令字 0:停止 1:启动
-    uint8_t     dir;            //方向   0:正转 1:反转
-    uint16_t    speed;          //目标速度  0 ~ 4000
-    uint8_t     uq;             //目标q轴电压 0 ~ 255       1 = 0.1 V
-    uint16_t    iq;             //目标q轴电流 0 ~ 19800     1 = 1 mA
-} __attribute__((__packed__ )) uart_ctrl_data_t;
-
 
 /**
  * 电机加速过程, 10K的执行频率
@@ -371,6 +362,87 @@ void motor_run(void)
     }
 }
 
+/**
+ * 电机vf运行
+ */
+void motor_vf_run(void)
+{
+    // 电机状态机
+    switch(g_app_param.motor_sta)
+    {
+        case MOTOR_STA_STOPPING:
+            break;
+
+        case MOTOR_STA_RUNNING:
+            break;
+
+        case MOTOR_STA_STARTING:
+            if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC)              //加速未完成
+            {
+                if(g_app_param.iq_acc_dir == ACC_START)                             //Iq发生改变，开始调整Iq
+                {
+                    if(g_app_param.curr_uq < g_app_param.target_uq)
+                    {
+                        g_app_param.iq_acc_dir = ACC_UP;
+                    }
+                    else
+                    {
+                        g_app_param.iq_acc_dir = ACC_DOWN;
+                    }
+                }
+
+                if(g_app_param.iq_acc_dir == ACC_UP)    //iq 加速
+                {
+                    g_app_param.curr_uq += 0.001f;  //步进
+
+                    if(g_app_param.curr_uq > g_app_param.target_uq)
+                    {
+                        g_app_param.iq_acc_dir = ACC_DONE;
+                        g_app_param.curr_uq = g_app_param.target_uq;
+                    }
+                }
+                else if(g_app_param.iq_acc_dir == ACC_DOWN) //iq 减速
+                {
+                    g_app_param.curr_uq -= 0.001f;  //步进
+
+                    if(g_app_param.curr_uq < g_app_param.target_uq)
+                    {
+                        g_app_param.iq_acc_dir = ACC_DONE;
+                        g_app_param.curr_uq = g_app_param.target_uq;
+                    }
+                }
+
+                g_FOC_Input.theta = g_app_param.curr_theta;
+                g_FOC_Input.Iq_ref = g_app_param.curr_uq;
+
+                g_FOC_Input.Udc     = adc_sample_physical_value_get(ADC_CH_VBUS);
+                g_FOC_Input.ia      = adc_sample_physical_value_get(ADC_CH_U_I);
+                g_FOC_Input.ib      = adc_sample_physical_value_get(ADC_CH_V_I);
+                g_FOC_Input.ic      = adc_sample_physical_value_get(ADC_CH_W_I);
+                g_FOC_Input.Id_ref  = 0.0f;
+
+                //计算好后赋值到PWM_CCRX比较寄存器通道
+   	            foc_algorithm_step();
+
+                TIM8->CCR1 = (uint16_t)(g_FOC_Output.Tcmp1);     
+	            TIM8->CCR2 = (uint16_t)(g_FOC_Output.Tcmp2);
+	            TIM8->CCR3 = (uint16_t)(g_FOC_Output.Tcmp3);
+            }
+            else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC_END)     //加速已完成，切换到恒速
+            {
+
+            }
+            else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_CONST)       //恒速运行
+            {
+                
+            }
+            break;
+
+        case MOTOR_STA_ERROR:
+            break;
+    }
+}
+
 
 /**
  *发送串口数据到vofa显示
@@ -409,6 +481,7 @@ static void vofa_send(void)
         break;
     
         case 1:
+#if 0
             justfloat_update(g_FOC_Input.Iq_ref,  0);
             justfloat_update(g_FOC_Output.EKF[3], 0);   //卡尔曼估算角度
             justfloat_update(g_FOC_Output.EKF[2], 0);   //卡尔曼估算速度
@@ -418,6 +491,14 @@ static void vofa_send(void)
 //          justfloat_update(adc_sample_physical_value_get(ADC_CH_U_I), 0);
 //	        justfloat_update(adc_sample_physical_value_get(ADC_CH_V_I), 0);
 	        justfloat_update(adc_sample_physical_value_get(ADC_CH_W_I), 1);
+#endif
+
+//VF 运行显示
+#if 1
+            justfloat_update(g_app_param.curr_uq,  0);
+            justfloat_update(g_app_param.target_uq,  0);
+            justfloat_update(g_app_param.curr_theta,  1);
+#endif
 
         break;
 
@@ -506,7 +587,8 @@ int motor_ctrl_task(void)
                 case CMD_TARGET_UQ:
                         trace_debug("target Uq %.4f\r\n", usart1_rx_data.data.fdate);
 
-                        g_app_param.target_uq = usart1_rx_data.data.fdate;
+                        g_app_param.target_uq  = usart1_rx_data.data.fdate;
+                        g_app_param.iq_acc_dir = ACC_START;
                     break;
 
                 case CMD_TARGET_STEP_ANGLE:
@@ -550,6 +632,8 @@ int motor_ctrl_task(void)
 
                 g_app_param.is_speed_ring_start = false;            //参数恢复
                 g_app_param.curr_iq = 0.0f;
+                g_app_param.curr_uq = 0.0f;
+                g_app_param.curr_theta = 0.0f;
                 g_app_param.iq_acc_dir = ACC_DONE;
             }
 

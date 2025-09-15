@@ -3,5 +3,6 @@
 
 void motor_run(void);
 int motor_ctrl_task(void);
+void motor_vf_run(void);
 
 #endif
