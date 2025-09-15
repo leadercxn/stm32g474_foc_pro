@@ -103,6 +103,8 @@ typedef struct
     float       curr_iq;            //  当前Iq
     float       curr_theta;         //  当前角度值
 
+    float       target_step_angle;  // 步进角度，单位：弧度
+
     float       foc_ts;             // FOC计算周期，单位s
 
     float       ekf_theta;

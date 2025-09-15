@@ -55,8 +55,8 @@ C_DEFS =  			\
 -DUSE_HAL_DRIVER 	\
 -DSTM32G474xx		\
 -DSIMULINK_USE_ARM_MATH		\
-# -DTRACE_ENABLE		\
-# -DTRACE_LEVEL=7		\
+-DTRACE_ENABLE		\
+-DTRACE_LEVEL=7		\
 # 假如使用VOFA float ，就要屏蔽 TRACE_ENABLE
 
 # AS includes

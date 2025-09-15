@@ -8,10 +8,10 @@ app_param_t g_app_param = {
     .motor_dir = MOTOR_DIR_CW,
     .motor_start_acc_sta = MOTOR_START_STA_ACC,
 
-    .motor_speed_set    = 60,
+    .motor_speed_set    = 20,
     .motor_speed_real   = 0,
 
-    .target_uq = 4.0f,
+    .target_uq = 1.0f,
     .target_iq = 1.0f,
 
     .curr_uq = 0.0f,

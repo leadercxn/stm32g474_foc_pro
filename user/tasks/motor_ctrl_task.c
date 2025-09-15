@@ -20,6 +20,29 @@
 
 TIMER_DEF(m_speed_pid_timer);           //速度环定时器
 
+typedef enum
+{
+    CMD_SW = 1,             //开关
+    CMD_TARGET_SPEED,       //目标速度
+    CMD_TARGET_IQ,          //目标d轴电流
+    CMD_TARGET_UQ,          //目标q轴电压
+    CMD_TARGET_STEP_ANGLE,  //目标步进幅度
+    CMD_DIR,                //方向
+} uart_cmd_e;
+
+typedef union
+{
+  	float       fdate;
+	uint32_t    udata;
+} float_uint32_u;
+
+typedef struct
+{
+    uart_cmd_e      cmd;
+    float_uint32_u  data;
+} __attribute__((__packed__ )) uart_cmd_t;
+
+
 #define UQ_INIT             0.5f        //无感启动初始q轴电压
 #define UQ_ACC_STEP         0.036f      //无感启动q轴电压每次增加步进
 #define FIRST_STEPS_TIMES   (60 * 20)   //无感启动初始固定相时间间隔
@@ -33,7 +56,7 @@ typedef struct
     uint16_t    speed;          //目标速度  0 ~ 4000
     uint8_t     uq;             //目标q轴电压 0 ~ 255       1 = 0.1 V
     uint16_t    iq;             //目标q轴电流 0 ~ 19800     1 = 1 mA
-} __attribute__((__packed__ )) uart_cmd_t;
+} __attribute__((__packed__ )) uart_ctrl_data_t;
 
 
 /**
@@ -389,11 +412,11 @@ static void vofa_send(void)
             justfloat_update(g_FOC_Input.Iq_ref,  0);
             justfloat_update(g_FOC_Output.EKF[3], 0);   //卡尔曼估算角度
             justfloat_update(g_FOC_Output.EKF[2], 0);   //卡尔曼估算速度
-//            justfloat_update(PLL_def.theta, 0);         //SMO估算角度
-//            justfloat_update(PLL_def.we,    0);            //SMO角速度
+            justfloat_update(PLL_def.theta, 0);         //SMO估算角度
+            justfloat_update(PLL_def.we,    0);         //SMO角速度
 
-            justfloat_update(adc_sample_physical_value_get(ADC_CH_U_I), 0);
-	        justfloat_update(adc_sample_physical_value_get(ADC_CH_V_I), 0);
+//          justfloat_update(adc_sample_physical_value_get(ADC_CH_U_I), 0);
+//	        justfloat_update(adc_sample_physical_value_get(ADC_CH_V_I), 0);
 	        justfloat_update(adc_sample_physical_value_get(ADC_CH_W_I), 1);
 
         break;
@@ -431,10 +454,10 @@ int motor_ctrl_task(void)
         TIMER_START(m_speed_pid_timer, 1);                                          // 1Kz的执行频率
     }
 
-    // 串口控制电机
+// 串口控制电机
 #if 1
-    uart_cmd_t usart1_rx_data;
-    uint8_t usart1_rx_len = 0;
+    uart_cmd_t  usart1_rx_data;
+    uint8_t     usart1_rx_len = 0;
 
     usart1_rx_len = usart1_rx( (uint8_t *)&usart1_rx_data );
     if(usart1_rx_len > 0)
@@ -442,65 +465,75 @@ int motor_ctrl_task(void)
         trace_debug("u1 rx %d data:\r\n", usart1_rx_len);
         trace_dump((uint8_t *)&usart1_rx_data, usart1_rx_len);
 
-        if(usart1_rx_data.cmd == 0)  //停止
+        if(usart1_rx_len == 5)      //目前VOFA个人设置只发送5字节数据
         {
-            g_app_param.motor_sta = MOTOR_STA_STOPPING;
-
-            trace_debug("motor stop\r\n");
-        }
-        else if(usart1_rx_data.cmd == 1)  //启动
-        {
-            g_app_param.motor_sta   = MOTOR_STA_STARTING;
-
-            g_app_param.iq_acc_dir  = ACC_START;
-
-            trace_debug("motor start\r\n");
-        }
-
-        if(usart1_rx_data.dir == 0)
-        {
-            g_app_param.motor_dir = MOTOR_DIR_CW;
-
-            trace_debug("motor dir MOTOR_DIR_CW\r\n");
-        }
-        else if(usart1_rx_data.dir == 1)
-        {
-            g_app_param.motor_dir = MOTOR_DIR_CCW;
-
-            trace_debug("motor dir MOTOR_DIR_CCW\r\n");
-        }
-
-        //speed
-        if((usart1_rx_data.speed >= MOTOR_SPEED_MIN_RPM) && (usart1_rx_data.speed <= MOTOR_SPEED_MAX_RPM))
-        {
-            g_app_param.motor_speed_set = usart1_rx_data.speed;
-
-            g_Speed_Ref = usart1_rx_data.speed;
-
-            trace_debug("montor speed %d\r\n", usart1_rx_data.speed);
-        }
-
-        //uq
-        if(usart1_rx_data.uq <= MOTOR_UQ_MAX)
-        {
-            g_app_param.target_uq = usart1_rx_data.uq * 0.1f;    //q轴电压 转换为实际电压值
-
-            trace_debug("montor uq %.2f\r\n", g_app_param.target_uq);
-        }
-
-        //iq
-        if(usart1_rx_data.iq <= (MOTOR_I_MAX * 1000))
-        {
-            g_app_param.target_iq = usart1_rx_data.iq * 0.001f;    //转换为实际电流值
-
-            if((g_app_param.target_iq > 3.0f) || (g_app_param.target_iq < -3.0f))
+            switch (usart1_rx_data.cmd)
             {
-                g_app_param.target_iq = 0.0f;
-            }
+                case CMD_SW:
+                    if(usart1_rx_data.data.udata == 0x0)                //关机控件
+                    {
+                        g_app_param.motor_sta = MOTOR_STA_STOPPING;
+                        trace_debug("motor stop\r\n");
+                    }
+                    else if(usart1_rx_data.data.udata == 0x3F800000)    //开机控件
+                    {
+                        g_app_param.motor_sta   = MOTOR_STA_STARTING;
+                        g_app_param.iq_acc_dir  = ACC_START;
 
-            trace_debug("montor iq %.2f\r\n", g_app_param.target_iq);
+                        g_Speed_Ref = g_app_param.motor_speed_set;
+                        trace_debug("motor start\r\n");
+                    }
+                    break;
+
+                case CMD_TARGET_SPEED:
+                        trace_debug("target speed %.4f\r\n", usart1_rx_data.data.fdate);
+
+                        g_app_param.motor_speed_set = (uint16_t)usart1_rx_data.data.fdate;
+
+                        g_Speed_Ref = usart1_rx_data.data.fdate;
+                    break;
+
+                case CMD_TARGET_IQ:
+                        trace_debug("target Iq %.4f\r\n", usart1_rx_data.data.fdate);
+
+                        g_app_param.target_iq = usart1_rx_data.data.fdate;
+                        if((g_app_param.target_iq > 6.0f) || (g_app_param.target_iq < -6.0f))
+                        {
+                            g_app_param.target_iq = 0.0f;
+                        }
+                    break;
+
+                case CMD_TARGET_UQ:
+                        trace_debug("target Uq %.4f\r\n", usart1_rx_data.data.fdate);
+
+                        g_app_param.target_uq = usart1_rx_data.data.fdate;
+                    break;
+
+                case CMD_TARGET_STEP_ANGLE:
+                        trace_debug("target step angle %.4f\r\n", usart1_rx_data.data.fdate);
+
+                        g_app_param.target_step_angle = usart1_rx_data.data.fdate;
+                    break;
+
+                case CMD_DIR:
+                    if(usart1_rx_data.data.udata == 0x0)                //控件数据
+                    {
+                        g_app_param.motor_dir = MOTOR_DIR_CW;
+                        trace_debug("dir cw\r\n");
+                    }
+                    else if(usart1_rx_data.data.udata == 0x3F800000)    //控件数据
+                    {
+                        g_app_param.motor_dir = MOTOR_DIR_CCW;
+                        trace_debug("dir ccw\r\n");
+                    }
+                    break;
+                
+                default:
+                    break;
+            }
         }
     }
+
 #endif
 
     // 电机状态机
