@@ -139,6 +139,7 @@ user/third_foc/IIR_LPF.c 		\
 user/third_foc/SMO_PLL.c 		\
 user/third_foc/speed_pid.c 		\
 user/third_foc/stm32_ekf_wrapper.c 	\
+user/third_foc/IF_start.c 		\
 
 # ASM sources
 ASM_SOURCES =  \

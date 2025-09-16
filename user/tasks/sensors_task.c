@@ -254,12 +254,16 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
             //motor_run();
 
 //VF
-#if 1
+#if 0
             g_app_param.curr_theta += g_app_param.target_step_angle;
             g_app_param.curr_theta = radian_normalize(g_app_param.curr_theta);
             motor_vf_run();
 #endif
 
+//IF
+#if 1
+            motor_if_run();
+#endif
         }
 
         gpio_output_set(TEST0_IO_PORT, TEST0_IO_PIN, 0);

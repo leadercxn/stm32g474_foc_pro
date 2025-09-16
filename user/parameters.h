@@ -12,6 +12,7 @@
 #include "SMO_PLL.h"
 #include "IIR_LPF.h"
 #include "arm_math.h"
+#include "IF_start.h"
 
 #define SYS_CLK_FREQ    170000000
 #define PWM_FREQ        20000       //20K

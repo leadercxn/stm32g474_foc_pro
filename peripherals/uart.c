@@ -180,7 +180,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     __HAL_LINKDMA(huart, hdmatx, m_dma_usart1_handle);
 
     HAL_NVIC_EnableIRQ(USART1_IRQn);                      /* 使能USART1中断通道 */
-    HAL_NVIC_SetPriority(USART1_IRQn, 3, 3);              /* 抢占优先级3，子优先级3 */
+    HAL_NVIC_SetPriority(USART1_IRQn, 0, 1);              /* 抢占优先级3，子优先级3 */
   }
 }
 

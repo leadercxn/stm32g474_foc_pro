@@ -42,126 +42,7 @@ typedef struct
     float_uint32_u  data;
 } __attribute__((__packed__ )) uart_cmd_t;
 
-
-#define UQ_INIT             0.5f        //无感启动初始q轴电压
-#define UQ_ACC_STEP         0.036f      //无感启动q轴电压每次增加步进
-#define FIRST_STEPS_TIMES   (60 * 20)   //无感启动初始固定相时间间隔
-
 float   vofa_param[12] = {0.0f};
-
-
-/**
- * 电机加速过程, 10K的执行频率
- */
-static void motor_acc_start_handle(void)
-{
-    static float                shaft_angle = PI_DIV_4;                 //电机轴角度
-    static uint16_t             motor_acc_cnt = 0;                      //电机加速次数计数
-    static uint16_t             motor_acc_ticks_dt = 0;                 //累计每一次电机调整角度时间间隔
-    static uint16_t             per_acc_hold_ticks = FIRST_STEPS_TIMES; //每一次调整角度的时间间隔长度
-
-    float uq = 0.0f;                                                    //q轴电压, 力矩
-
-    static uint16_t motor_start_const_cnt = 0;                          //启动进入恒速转动计数, 用来切入到滑膜观测
-
-    // 电机状态机
-    switch(g_app_param.motor_sta)
-    {
-        case MOTOR_STA_STOP:
-            break;
-
-        case MOTOR_STA_STOPPING:
-            torque_set(0.0f, 0.0f, 0);                                  // 停止时，电压为0
-
-            g_app_param.motor_start_acc_sta     = MOTOR_START_STA_ACC;
-            motor_acc_ticks_dt                  = 0;
-            motor_acc_cnt                       = 0;
-            per_acc_hold_ticks                  = FIRST_STEPS_TIMES;
-            shaft_angle                         = PI_DIV_4;
-            motor_start_const_cnt               = 0;
-            g_app_param.motor_sta               = MOTOR_STA_STOP;       //  切回到停止状态
-            break;
-
-        case MOTOR_STA_RUNNING:
-            break;
-
-        case MOTOR_STA_STARTING:
-/**
- * 参考 正点原子 六步换相 时间间隔进行加速
- */
-#if 1
-                if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC)                  //加速未完成
-                {
-                    motor_acc_ticks_dt ++;
-                    if(motor_acc_ticks_dt > per_acc_hold_ticks)                             //进行一次加速
-                    {
-                        motor_acc_cnt++;
-
-                        per_acc_hold_ticks -= per_acc_hold_ticks / 12;                     //加速时间间隔逐渐变短
-                        if(per_acc_hold_ticks < 130)
-                        {
-                            per_acc_hold_ticks = 100;                                       //加速时间间隔下限
-
-                            g_app_param.motor_start_acc_sta = MOTOR_START_STA_ACC_END;      //加速完成
-                        }
-
-                        motor_acc_ticks_dt = 0;                                             //清零时间间隔计数
-
-                        shaft_angle += PI_DIV_4;                                            //每次加速，电机转动60°
-                        shaft_angle = radian_normalize(shaft_angle);
-                    }
-
-                    uq = UQ_INIT + motor_acc_cnt * UQ_ACC_STEP;
-                    uq = CONSTRAIN(uq, 0.1f, 3.0f);
-
-                    torque_set(uq, 0, shaft_angle);
-                }
-                else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC_END)         //加速已完成，切换到恒速
-                {
-                    g_app_param.motor_start_acc_sta = MOTOR_START_STA_CONST;
-                }
-                else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_CONST)           //恒速运行
-                {
-                    motor_acc_ticks_dt ++;
-                    if(motor_acc_ticks_dt > per_acc_hold_ticks)                             //进行一次角度调整
-                    {
-                        motor_acc_ticks_dt = 0;
-
-                        shaft_angle += PI_DIV_4;
-                        shaft_angle = radian_normalize(shaft_angle);
-
-                        uq = UQ_INIT + motor_acc_cnt * UQ_ACC_STEP;
-                        uq = CONSTRAIN(uq, 0.1f, 3.0f);
-
-                        torque_set(uq, 0, shaft_angle);
-                    }
-
-// 跳转到滑膜观测器 & 锁相
-#if 0
-                    motor_start_const_cnt++;
-                    if(motor_start_const_cnt >= 30000)                                       //恒速一定时间后，切入到运行态，进行滑膜观察
-                    {
-                        motor_start_const_cnt = 0;
-
-                        g_app_param.motor_sta  = MOTOR_STA_RUNNING;                         //切换到运行态
-                        g_app_param.curr_uq    = 0.0f;                                      //切换到运行态后， uq 重新重头开始
-                    }
-#endif
-                }
-
-            if(g_app_param.motor_sta != MOTOR_STA_RUNNING)
-            {
-                g_app_param.curr_uq     = uq;
-                g_app_param.curr_theta  = shaft_angle;                              //接着强拖后的角度
-            }
-#endif
-            break;
-
-        case MOTOR_STA_ERROR:
-
-            break;
-    }
-}
 
 /**
  * 电机算法运行过程
@@ -443,6 +324,102 @@ void motor_vf_run(void)
     }
 }
 
+/**
+ * 电机if运行
+ */
+void motor_if_run(void)
+{
+    // 电机状态机
+    switch(g_app_param.motor_sta)
+    {
+        case MOTOR_STA_STOPPING:
+            break;
+
+        case MOTOR_STA_RUNNING:
+            break;
+
+        case MOTOR_STA_STARTING:
+            if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC)              //加速未完成
+            {
+                if(g_app_param.iq_acc_dir == ACC_START)                             //Iq发生改变，开始调整Iq
+                {
+                    if(g_app_param.curr_iq < g_app_param.target_iq)
+                    {
+                        g_app_param.iq_acc_dir = ACC_UP;
+                    }
+                    else
+                    {
+                        g_app_param.iq_acc_dir = ACC_DOWN;
+                    }
+                }
+
+                if(g_app_param.iq_acc_dir == ACC_UP)    //iq 加速
+                {
+                    g_app_param.curr_iq += 0.001f;  //步进
+
+                    if(g_app_param.curr_iq > g_app_param.target_iq)
+                    {
+                        g_app_param.iq_acc_dir = ACC_DONE;
+                        g_app_param.curr_iq = g_app_param.target_iq;
+                    }
+                }
+                else if(g_app_param.iq_acc_dir == ACC_DOWN) //iq 减速
+                {
+                    g_app_param.curr_iq -= 0.001f;  //步进
+
+                    if(g_app_param.curr_iq < g_app_param.target_iq)
+                    {
+                        g_app_param.iq_acc_dir = ACC_DONE;
+                        g_app_param.curr_iq = g_app_param.target_iq;
+                    }
+                }
+
+                if( !g_app_param.is_speed_ring_start )                  //速度闭环未开始
+                {
+                    g_IF_start_def.IF_abs_time++;
+                    IF_start_Algorithm(&g_FOC_Input.Iq_ref, &g_FOC_Input.theta, &g_IF_start_def);
+                    g_Speed_Pid.I_Sum = g_app_param.curr_iq;;
+
+
+                    if(g_FOC_Output.EKF[2] > SPEED_LOOP_CLOSE_RAD_S)    //检测速度是否达标速度闭环
+                    {
+                        g_app_param.is_speed_ring_start = true;
+                    }
+                }
+                else                                                    //开始速度闭环
+                {
+                    g_FOC_Input.theta = g_FOC_Output.EKF[3];            //使用卡尔曼估算角度
+                    g_Speed_Fdk         = g_FOC_Output.EKF[2];          //使用卡尔曼估算的角速度
+                    g_FOC_Input.Iq_ref  = g_Speed_Pid_Out;              //使用速度环的输出值作为目标Iq
+                }
+
+                g_FOC_Input.Udc     = adc_sample_physical_value_get(ADC_CH_VBUS);
+                g_FOC_Input.ia      = adc_sample_physical_value_get(ADC_CH_U_I);
+                g_FOC_Input.ib      = adc_sample_physical_value_get(ADC_CH_V_I);
+                g_FOC_Input.ic      = adc_sample_physical_value_get(ADC_CH_W_I);
+                g_FOC_Input.Id_ref  = 0.0f;
+
+                //计算好后赋值到PWM_CCRX比较寄存器通道
+   	            foc_algorithm_step();
+
+                TIM8->CCR1 = (uint16_t)(g_FOC_Output.Tcmp1);     
+	            TIM8->CCR2 = (uint16_t)(g_FOC_Output.Tcmp2);
+	            TIM8->CCR3 = (uint16_t)(g_FOC_Output.Tcmp3);
+            }
+            else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC_END)     //加速已完成，切换到恒速
+            {
+
+            }
+            else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_CONST)       //恒速运行
+            {
+                
+            }
+            break;
+
+        case MOTOR_STA_ERROR:
+            break;
+    }
+}
 
 /**
  *发送串口数据到vofa显示
@@ -495,8 +472,12 @@ static void vofa_send(void)
 
 //VF 运行显示
 #if 1
-            justfloat_update(g_app_param.curr_uq,  0);
-            justfloat_update(g_app_param.target_uq,  0);
+            //justfloat_update(g_app_param.curr_uq,  0);
+            //justfloat_update(g_app_param.target_uq,  0);
+            justfloat_update(g_FOC_Output.EKF[3], 0);   //卡尔曼估算角度
+            justfloat_update(g_FOC_Output.EKF[2], 0);   //卡尔曼估算速度
+            justfloat_update(PLL_def.theta, 0);         //SMO估算角度
+            justfloat_update(PLL_def.we,    0);         //SMO角速度
             justfloat_update(g_app_param.curr_theta,  1);
 #endif
 
@@ -505,7 +486,7 @@ static void vofa_send(void)
         default:
             break;
     }
-    
+
 //    tx_idx++;
     if(tx_idx > 1)
     {
@@ -519,24 +500,9 @@ static void speed_pid_timer_handler(void *p_data)
     Speed_Pid_Calc(g_Speed_Ref, g_Speed_Fdk, &g_Speed_Pid_Out, &g_Speed_Pid);
 }
 
-/**
- * 电机控制逻辑任务
- */
-int motor_ctrl_task(void)
+static void usart_ctrl_cmd_handler(void)
 {
-    static bool init_done = false;
-
-    if(!init_done)
-    {
-        init_done = true;
-        timer8_irq_cb_register(timer8_irq_cb_handler);      //回调函数注册到 timer8 的中断函数里面
-
-        TIMER_CREATE(&m_speed_pid_timer, false, true, speed_pid_timer_handler);     //循环定时器，立马执行
-        TIMER_START(m_speed_pid_timer, 1);                                          // 1Kz的执行频率
-    }
-
-// 串口控制电机
-#if 1
+    //串口控制命令处理
     uart_cmd_t  usart1_rx_data;
     uint8_t     usart1_rx_len = 0;
 
@@ -615,8 +581,25 @@ int motor_ctrl_task(void)
             }
         }
     }
+}
 
-#endif
+/**
+ * 电机控制逻辑任务
+ */
+int motor_ctrl_task(void)
+{
+    static bool init_done = false;
+
+    if(!init_done)
+    {
+        init_done = true;
+        timer8_irq_cb_register(timer8_irq_cb_handler);      //回调函数注册到 timer8 的中断函数里面
+
+        TIMER_CREATE(&m_speed_pid_timer, false, true, speed_pid_timer_handler);     //循环定时器，立马执行
+        TIMER_START(m_speed_pid_timer, 1);                                          // 1Kz的执行频率
+    }
+
+    usart_ctrl_cmd_handler();    //串口控制命令处理
 
     // 电机状态机
     switch(g_app_param.motor_sta)
@@ -649,7 +632,9 @@ int motor_ctrl_task(void)
         case MOTOR_STA_STARTING:
             if(g_app_param.motor_sta != g_app_param.pre_motor_sta)  //每一次启动都要foc参数初始化
             {
-                foc_algorithm_initialize();   //FOC 算法参数初始化
+                IF_Start_Init();                //IF启动参数初始化
+
+                foc_algorithm_initialize();     //FOC 算法参数初始化
 
                 phase_pwm_start();
             }

@@ -175,10 +175,10 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
 
     __HAL_LINKDMA(adcHandle, DMA_Handle, m_dma_adc2_handle);
 
-    HAL_NVIC_SetPriority(ADC1_2_IRQn, 0, 2);
+    HAL_NVIC_SetPriority(ADC1_2_IRQn, 2, 1);
     HAL_NVIC_EnableIRQ(ADC1_2_IRQn);
 
-    HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 2, 1);                        /* 设置DMA中断优先级为2，子优先级为0 */
+    HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 2, 2);                        /* 设置DMA中断优先级为2，子优先级为0 */
     HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);    
   }
 }
