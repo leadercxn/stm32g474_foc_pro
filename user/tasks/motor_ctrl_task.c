@@ -248,6 +248,7 @@ void motor_run(void)
  */
 void motor_vf_run(void)
 {
+    static uint16_t vf_start_cnt = 0;
     // 电机状态机
     switch(g_app_param.motor_sta)
     {
@@ -293,8 +294,32 @@ void motor_vf_run(void)
                     }
                 }
 
-                g_FOC_Input.theta = g_app_param.curr_theta;
-                g_FOC_Input.Iq_ref = g_app_param.curr_uq;
+                if( !g_app_param.is_speed_ring_start )                  //速度闭环未开始
+                {
+                    g_FOC_Input.theta = g_app_param.curr_theta;
+                    g_FOC_Input.Iq_ref = g_app_param.curr_uq;
+
+                    if( (g_FOC_Output.EKF[2] > 60.0f) || (g_FOC_Output.EKF[2] < -60.0f) )    //检测速度是否达标速度闭环
+                    {
+                        vf_start_cnt++;
+                        if(vf_start_cnt > 40000)                       //速度环达标超4S后，转到速度闭环
+                        {
+                            vf_start_cnt = 0;
+                            g_app_param.is_speed_ring_start = true;
+                        }
+                    }
+                    else
+                    {
+                        vf_start_cnt = 0;
+                    }
+                }
+                else
+                {
+                    g_FOC_Input.theta   = g_FOC_Output.EKF[3];          //使用卡尔曼估算角度
+                    g_Speed_Fdk         = g_FOC_Output.EKF[2];          //使用卡尔曼估算的角速度
+                    g_FOC_Input.Iq_ref  = g_Speed_Pid_Out;              //使用速度环的输出值作为目标Iq
+                }
+                
 
                 g_FOC_Input.Udc     = adc_sample_physical_value_get(ADC_CH_VBUS);
                 g_FOC_Input.ia      = adc_sample_physical_value_get(ADC_CH_U_I);
@@ -494,6 +519,9 @@ static void vofa_send(void)
     }
 }
 
+/**
+ * 速度环回调函数
+ */
 static void speed_pid_timer_handler(void *p_data)
 {
     //速度环执行
