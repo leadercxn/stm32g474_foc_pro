@@ -388,7 +388,7 @@ void motor_if_run(void)
                 }
                 else                                                    //开始速度闭环
                 {
-                    g_FOC_Input.theta = g_FOC_Output.EKF[3];            //使用卡尔曼估算角度
+                    g_FOC_Input.theta   = g_FOC_Output.EKF[3];          //使用卡尔曼估算角度
                     g_Speed_Fdk         = g_FOC_Output.EKF[2];          //使用卡尔曼估算的角速度
                     g_FOC_Input.Iq_ref  = g_Speed_Pid_Out;              //使用速度环的输出值作为目标Iq
                 }

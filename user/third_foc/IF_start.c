@@ -32,7 +32,7 @@ void IF_start_Algorithm(float *Iq, float *theta, IF_start_DEF *IF_start_Def)
 	if((IF_start_Def->IF_abs_time < 5000) && (IF_start_Def->IF_abs_time > 1))
 	{
 	    *Iq = 0.0f;
-		*theta = 0.0f;	
+		*theta = 0.0f;
 	}
   	/*************第二阶段---强拖定位**************/  
 	//0.5
@@ -47,13 +47,13 @@ void IF_start_Algorithm(float *Iq, float *theta, IF_start_DEF *IF_start_Def)
 	{
 	    *Iq = IF_start_Def->Iq_speed;
 		IF_start_Def->IF_we += IF_start_Def->Speed_acc * IF_start_Def->IF_time_S;
-		    
+
 		IF_start_Def->IF_theta += IF_start_Def->IF_we * IF_start_Def->IF_time_S;
 
 		if(IF_start_Def->IF_theta > 6.28318f)
 		{
 			IF_start_Def->IF_theta -= 6.28318f;
-		}	
+		}
 		*theta = IF_start_Def->IF_theta;	
 	}
  	/*************第三阶段---速度维持**************/
@@ -65,7 +65,7 @@ void IF_start_Algorithm(float *Iq, float *theta, IF_start_DEF *IF_start_Def)
 		if(IF_start_Def->IF_theta>6.28318f)
 		{
 			IF_start_Def->IF_theta-=6.28318f;
-		}	
+		}
 		*theta = IF_start_Def->IF_theta;	
 		IF_start_Def->IF_abs_time = 46000;
 	}

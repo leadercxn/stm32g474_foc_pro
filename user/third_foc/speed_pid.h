@@ -32,6 +32,17 @@ typedef struct
   real32_T Max_Output;
   real32_T Min_Output;
   real32_T I_Sum;
+
+  float last_speed;
+	float speed_step_add;
+
+	uint16_T err_time_count;
+	uint16_T err_time_flag;
+
+	float speed_ref_last;
+	uint8_T speed_start_flag;
+	uint8_T speed_reversal_to_forward;
+	uint8_T speed_add_flag;
 }SPEED_PID_DEF;
 
 extern SPEED_PID_DEF g_Speed_Pid;
