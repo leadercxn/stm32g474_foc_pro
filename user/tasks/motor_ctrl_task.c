@@ -299,6 +299,8 @@ void motor_vf_run(void)
                     g_FOC_Input.theta = g_app_param.curr_theta;
                     g_FOC_Input.Iq_ref = g_app_param.curr_uq;
 
+//速度稳定后切入到速度环
+#if 1
                     if( (g_FOC_Output.EKF[2] > 60.0f) || (g_FOC_Output.EKF[2] < -60.0f) )    //检测速度是否达标速度闭环
                     {
                         vf_start_cnt++;
@@ -306,17 +308,21 @@ void motor_vf_run(void)
                         {
                             vf_start_cnt = 0;
                             g_app_param.is_speed_ring_start = true;
+
+                            TIMER_START(m_speed_pid_timer, 1);          //1K的执行频率
                         }
                     }
                     else
                     {
                         vf_start_cnt = 0;
                     }
+#endif
+
                 }
                 else
                 {
-                    g_FOC_Input.theta   = g_FOC_Output.EKF[3];          //使用卡尔曼估算角度
                     g_Speed_Fdk         = g_FOC_Output.EKF[2];          //使用卡尔曼估算的角速度
+                    g_FOC_Input.theta   = g_FOC_Output.EKF[3];          //使用卡尔曼估算角度
                     g_FOC_Input.Iq_ref  = g_Speed_Pid_Out;              //使用速度环的输出值作为目标Iq
                 }
                 
@@ -624,7 +630,6 @@ int motor_ctrl_task(void)
         timer8_irq_cb_register(timer8_irq_cb_handler);      //回调函数注册到 timer8 的中断函数里面
 
         TIMER_CREATE(&m_speed_pid_timer, false, true, speed_pid_timer_handler);     //循环定时器，立马执行
-        TIMER_START(m_speed_pid_timer, 1);                                          // 1Kz的执行频率
     }
 
     usart_ctrl_cmd_handler();    //串口控制命令处理
@@ -646,8 +651,11 @@ int motor_ctrl_task(void)
                 g_app_param.curr_uq = 0.0f;
                 g_app_param.curr_theta = 0.0f;
                 g_app_param.iq_acc_dir = ACC_DONE;
+
+                g_app_param.is_param_init_done = false;
             }
 
+            TIMER_STOP(m_speed_pid_timer);
             gpio_output_set(PWM_EN_PORT, PWM_EN_PIN, 0);
 
             g_app_param.motor_sta = MOTOR_STA_STOP;
@@ -663,6 +671,8 @@ int motor_ctrl_task(void)
                 IF_Start_Init();                //IF启动参数初始化
 
                 foc_algorithm_initialize();     //FOC 算法参数初始化
+
+                g_app_param.is_param_init_done = true;
 
                 phase_pwm_start();
             }

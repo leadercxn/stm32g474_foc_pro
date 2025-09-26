@@ -20,6 +20,7 @@ app_param_t g_app_param = {
 
     .iq_acc_dir = ACC_DONE,
     .is_speed_ring_start = false,
+    .is_param_init_done = false,
 };
 
 // ekf pi控制器

@@ -116,6 +116,7 @@ typedef struct
 
     motor_acc_dir_e     iq_acc_dir;     // iq加速的方向,  0：iq达标  1：iq加速  2:iq减速 4:开始加速
     bool        is_speed_ring_start;    // 速度环开始标记
+    bool        is_param_init_done;     // 参数初始化完成标记
 } app_param_t;
 
 extern app_param_t g_app_param;
