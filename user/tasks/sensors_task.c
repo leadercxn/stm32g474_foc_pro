@@ -259,13 +259,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 //VF
 #if 1
-            if(g_app_param.is_param_init_done)
-            {
-                g_app_param.curr_theta += g_app_param.target_step_angle;
-                g_app_param.curr_theta = radian_normalize(g_app_param.curr_theta);
-
-                motor_vf_run();
-            }
+            g_app_param.curr_theta += g_app_param.target_step_angle;
+            g_app_param.curr_theta = radian_normalize(g_app_param.curr_theta);
+            motor_vf_run();
 #endif
 
 //IF

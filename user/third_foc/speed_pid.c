@@ -8,9 +8,9 @@
 
 real32_T SPEED_PI_I   = 5.0F;
 real32_T SPEED_PI_KB  = 0.015F;
-real32_T SPEED_PI_LOW_LIMIT = -5.0F;
+real32_T SPEED_PI_LOW_LIMIT = -6.0F;
 real32_T SPEED_PI_P   = 0.003F;
-real32_T SPEED_PI_UP_LIMIT = 5.0F;
+real32_T SPEED_PI_UP_LIMIT = 6.0F;
 
                    
 real32_T g_Speed_Ref;        //速度参考          

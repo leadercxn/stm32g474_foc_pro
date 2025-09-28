@@ -290,6 +290,41 @@ y[2] = xD[2];
 y[3] = xD[3];
 }
 
+/**
+ * 根据估算的角度，计算方向，角度逐步减小为顺时针，增大为逆时针
+ * 
+ * 1 代表顺时针
+ * 0 检测不到
+ * -1 代表逆时针
+ */
+int stm32_ekf_angle_2_dir(real32_T angle)
+{
+    static real32_T angle_pre[4] = {0};
+
+    // 数据 往 前 << 推, idx越大，数据越新
+    angle_pre[0] = angle_pre[1];
+    angle_pre[1] = angle_pre[2];
+    angle_pre[2] = angle_pre[3];
+    angle_pre[3] = angle;
+
+    if(angle - angle_pre[2] > 6.0f) //发生了角度突变, 而且是突然变大的，初步估计是顺时针
+    {
+        if((angle_pre[2] < angle_pre[1]) && (angle_pre[1] < angle_pre[0])) //前面两次数据也是递减的
+        {
+            return 1; //顺时针
+        }
+    }
+
+    if(angle - angle_pre[2] < (-6.0f)) //发生了角度突变, 而且是突然变小的，初步估计是逆时针
+    {
+        if((angle_pre[2] > angle_pre[1]) && (angle_pre[1] > angle_pre[0])) //前面两次数据也是递增的
+        {
+            return -1; //逆时针
+        }
+    }
+
+    return 0;
+}
 
 void stm32_ekf_Update_wrapper(const real32_T *u,
 			real32_T *y,
@@ -565,10 +600,46 @@ tempa_3_0 = X_pred_3_0 + K_3_0*(Y_0_0 - Y_pred_0_0) + K_3_1*(Y_1_0 - Y_pred_1_0)
 	}
 #endif
 
-xD[0] = tempa_0_0;
-xD[1] = tempa_1_0;
-xD[2] = tempa_2_0;
-xD[3] = tempa_3_0;
+    xD[0] = tempa_0_0;
+    xD[1] = tempa_1_0;
+    xD[2] = tempa_2_0;
+    xD[3] = tempa_3_0;
+
+#if 0
+    int dir = 0;
+
+    dir = stm32_ekf_angle_2_dir(xD[3]);
+    if( dir == 1 )       // 顺时针
+    {
+        if(xD[2] > 0.0f)
+        {
+            xD[2] = - xD[2];
+        }
+    }
+    else if( dir == -1 ) // 逆时针
+    {
+        if(xD[2] < 0.0f)
+        {
+            xD[2] = - xD[2];
+        }
+    }
+#endif
+
+    if(g_app_param.motor_dir == MOTOR_DIR_CW)   // 顺时针
+    {
+        if(xD[2] > 0.0f)
+        {
+            xD[2] = - xD[2];
+        }
+    }
+    else                                        // 逆时针
+    {
+        if(xD[2] < 0.0f)
+        {
+            xD[2] = - xD[2];
+        }
+    }
+
 /*
 xD[4] = P0_0_0;
 xD[5] = P0_0_1;

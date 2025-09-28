@@ -309,7 +309,7 @@ void motor_vf_run(void)
                             vf_start_cnt = 0;
                             g_app_param.is_speed_ring_start = true;
 
-                            TIMER_START(m_speed_pid_timer, 1);          //1K的执行频率
+                            TIMER_START(m_speed_pid_timer, 1);         //1K的执行频率
                         }
                     }
                     else
@@ -503,13 +503,18 @@ static void vofa_send(void)
 
 //VF 运行显示
 #if 1
-            //justfloat_update(g_app_param.curr_uq,  0);
-            //justfloat_update(g_app_param.target_uq,  0);
-            justfloat_update(g_FOC_Output.EKF[3], 0);   //卡尔曼估算角度
-            justfloat_update(g_FOC_Output.EKF[2], 0);   //卡尔曼估算速度
-            justfloat_update(PLL_def.theta, 0);         //SMO估算角度
-            justfloat_update(PLL_def.we,    0);         //SMO角速度
-            justfloat_update(g_app_param.curr_theta,  1);
+            justfloat_update(g_FOC_Output.EKF[3], 0);   //卡尔曼估算角度 -- 0
+            justfloat_update(g_FOC_Output.EKF[2], 0);   //卡尔曼估算速度 -- 1
+            justfloat_update(PLL_def.theta, 0);         //SMO估算角度   -- 2
+            justfloat_update(PLL_def.we,    0);         //SMO角速度     -- 3
+
+            justfloat_update(Current_Idq.Iq,    0);         //当前Iq    -- 4
+            justfloat_update(g_FOC_Input.Iq_ref,    0);     //目标Iq    -- 5
+            justfloat_update(Voltage_DQ.Vq,    0);          //实际的Vq  -- 6
+
+            justfloat_update(g_Speed_Ref,    0);          //目标speed   -- 7
+
+            justfloat_update(g_app_param.curr_theta,  1);   // -- 8
 #endif
 
         break;
@@ -569,13 +574,43 @@ static void usart_ctrl_cmd_handler(void)
                 case CMD_TARGET_SPEED:
                         trace_debug("target speed %.4f\r\n", usart1_rx_data.data.fdate);
 
-                        g_app_param.motor_speed_set = (uint16_t)usart1_rx_data.data.fdate;
+                        if(g_app_param.motor_dir == MOTOR_DIR_CCW)  //逆
+                        {
+                            if(usart1_rx_data.data.fdate < 0.0f)
+                            {
+                                usart1_rx_data.data.fdate = -usart1_rx_data.data.fdate;
+                            }
+                        }
+                        else                                        //顺
+                        {
+                            if(usart1_rx_data.data.fdate > 0.0f)
+                            {
+                                usart1_rx_data.data.fdate = -usart1_rx_data.data.fdate;
+                            }
+                        }
 
-                        g_Speed_Ref = usart1_rx_data.data.fdate;
+                        g_app_param.motor_speed_set = usart1_rx_data.data.fdate;
+
+                        g_Speed_Ref = g_app_param.motor_speed_set;
                     break;
 
                 case CMD_TARGET_IQ:
                         trace_debug("target Iq %.4f\r\n", usart1_rx_data.data.fdate);
+
+                        if(g_app_param.motor_dir == MOTOR_DIR_CCW)  //逆
+                        {
+                            if(usart1_rx_data.data.fdate < 0.0f)
+                            {
+                                usart1_rx_data.data.fdate = -usart1_rx_data.data.fdate;
+                            }
+                        }
+                        else                                        //顺
+                        {
+                            if(usart1_rx_data.data.fdate > 0.0f)
+                            {
+                                usart1_rx_data.data.fdate = -usart1_rx_data.data.fdate;
+                            }
+                        }
 
                         g_app_param.target_iq = usart1_rx_data.data.fdate;
                         if((g_app_param.target_iq > 6.0f) || (g_app_param.target_iq < -6.0f))
@@ -594,19 +629,68 @@ static void usart_ctrl_cmd_handler(void)
                 case CMD_TARGET_STEP_ANGLE:
                         trace_debug("target step angle %.4f\r\n", usart1_rx_data.data.fdate);
 
+                        if(g_app_param.motor_dir == MOTOR_DIR_CCW)  //逆
+                        {
+                            if(usart1_rx_data.data.fdate < 0.0f)
+                            {
+                                usart1_rx_data.data.fdate = -usart1_rx_data.data.fdate;
+                            }
+                        }
+                        else                                        //顺
+                        {
+                            if(usart1_rx_data.data.fdate > 0.0f)
+                            {
+                                usart1_rx_data.data.fdate = -usart1_rx_data.data.fdate;
+                            }
+                        }
+
                         g_app_param.target_step_angle = usart1_rx_data.data.fdate;
                     break;
 
                 case CMD_DIR:
                     if(usart1_rx_data.data.udata == 0x0)                //控件数据
                     {
-                        g_app_param.motor_dir = MOTOR_DIR_CW;
+                        g_app_param.motor_dir = MOTOR_DIR_CCW;
                         trace_debug("dir cw\r\n");
+
+                        //改变了方向，数据的正负极性也要修改
+                        if(g_app_param.motor_speed_set < 0.0f)
+                        {
+                            g_app_param.motor_speed_set = -g_app_param.motor_speed_set;
+                        }
+                        g_Speed_Ref = g_app_param.motor_speed_set;
+
+                        if(g_app_param.target_iq < 0.0f)
+                        {
+                            g_app_param.target_iq = -g_app_param.target_iq;
+                        }
+
+                        if(g_app_param.target_step_angle < 0.0f)
+                        {
+                            g_app_param.target_step_angle = -g_app_param.target_step_angle;
+                        }
                     }
                     else if(usart1_rx_data.data.udata == 0x3F800000)    //控件数据
                     {
-                        g_app_param.motor_dir = MOTOR_DIR_CCW;
+                        g_app_param.motor_dir = MOTOR_DIR_CW;
                         trace_debug("dir ccw\r\n");
+
+                        //改变了方向，数据的正负极性也要修改
+                        if(g_app_param.motor_speed_set > 0.0f)
+                        {
+                            g_app_param.motor_speed_set = -g_app_param.motor_speed_set;
+                        }
+                        g_Speed_Ref = g_app_param.motor_speed_set;
+
+                        if(g_app_param.target_iq > 0.0f)
+                        {
+                            g_app_param.target_iq = -g_app_param.target_iq;
+                        }
+
+                        if(g_app_param.target_step_angle > 0.0f)
+                        {
+                            g_app_param.target_step_angle = -g_app_param.target_step_angle;
+                        }
                     }
                     break;
                 
@@ -651,8 +735,6 @@ int motor_ctrl_task(void)
                 g_app_param.curr_uq = 0.0f;
                 g_app_param.curr_theta = 0.0f;
                 g_app_param.iq_acc_dir = ACC_DONE;
-
-                g_app_param.is_param_init_done = false;
             }
 
             TIMER_STOP(m_speed_pid_timer);
@@ -671,8 +753,6 @@ int motor_ctrl_task(void)
                 IF_Start_Init();                //IF启动参数初始化
 
                 foc_algorithm_initialize();     //FOC 算法参数初始化
-
-                g_app_param.is_param_init_done = true;
 
                 phase_pwm_start();
             }

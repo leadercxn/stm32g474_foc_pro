@@ -94,8 +94,8 @@ typedef struct
 
     motor_start_sta_e   motor_start_acc_sta;    //电机启动加速状态
 
-    uint16_t    motor_speed_set;    // 电机设定速度，单位RPM
-    uint16_t    motor_speed_real;   // 电机实际速度，单位RPM
+    float    motor_speed_set;    // 电机设定速度，单位RPM
+    float    motor_speed_real;   // 电机实际速度，单位RPM
 
     float       target_uq;          // q轴电压 单位V
     float       target_iq;          // q轴电流 单位A
@@ -116,7 +116,6 @@ typedef struct
 
     motor_acc_dir_e     iq_acc_dir;     // iq加速的方向,  0：iq达标  1：iq加速  2:iq减速 4:开始加速
     bool        is_speed_ring_start;    // 速度环开始标记
-    bool        is_param_init_done;     // 参数初始化完成标记
 } app_param_t;
 
 extern app_param_t g_app_param;

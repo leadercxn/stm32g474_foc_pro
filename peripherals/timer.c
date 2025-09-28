@@ -112,7 +112,7 @@ int timer8_init(void)
     }
 //    __HAL_TIM_DISABLE_OCxPRELOAD(&m_timer8_handle, TIM_CHANNEL_3);
 
-    oc_cfg.Pulse = (PWM_PERIOD - 15); //用来触发 adc 采集电流
+    oc_cfg.Pulse = (PWM_PERIOD - 10); //用来触发 adc 采集电流
     if (HAL_TIM_PWM_ConfigChannel(&m_timer8_handle, &oc_cfg, TIM_CHANNEL_4) != HAL_OK)
     {
         Error_Handler();
@@ -245,10 +245,7 @@ void phase_pwm_stop(void)
     HAL_TIMEx_PWMN_Stop(&m_timer8_handle, TIM_CHANNEL_2);
     HAL_TIMEx_PWMN_Stop(&m_timer8_handle, TIM_CHANNEL_3);
 
-//    HAL_TIM_PWM_Stop(&m_timer8_handle, TIM_CHANNEL_4);
-
     TIM8->CCR1 = 0;
 	TIM8->CCR2 = 0;
 	TIM8->CCR3 = 0;
-//    TIM8->CCR4 = 0;
 }
