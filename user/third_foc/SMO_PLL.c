@@ -1,4 +1,4 @@
-#include "SMO_PLL.h"
+#include "smo_pll.h"
 //#define RS_PARAMETER     0.2f           //电阻
 //#define LS_PARAMETER     0.0004f          //电感
 //#define FLUX_PARAMETER   0.0090969f        //磁链
@@ -14,16 +14,14 @@
 //float RLd = 500.0f;
 
 // Ld =  1/Ld
-float Ld = 2500.0f;
+static float m_ld = 2500.0f;
 // RLd = R/Ld
-float RLd = 500.0f;
+static float m_rld = 500.0f;
 
+static float m_gain_h = 7.0f;
 
-float Gain_h = 7.0f;
-
- PLL_DEF PLL_def;//PLL锁相环结构体
-
- SMO_Struct_DEF SMO_Struct_def;//滑膜结构体
+pll_struct_t g_pll;		//PLL锁相环结构体
+smo_struct_t g_smo;		//滑膜结构体
  
  
 /*
@@ -35,99 +33,105 @@ float Gain_h = 7.0f;
 */
 float sign(float *date)
 {
-	 float re = 0;
-   if(*date >1.0f) re=1.0f;
-	 else if(*date <-1.0f)re=-1.0f;
-	 else re = *date ;	 
-	 return re;
+	float re = 0;
+
+   	if(*date > 1.0f)
+		re = 1.0f;
+	else if(*date < -1.0f)
+		re = -1.0f;
+	else
+		re = *date;
+
+	return re;
 }
+
 /*
 *滑膜观测函数
-*输入 We Ualfa  Ubeta
-*输出Ealfa Ebeta
-*
+*输入 We u_alfa  u_beta
+*输出 e_alfa e_beta
 *
 */
-void SMO_Observer(float Ualfa,float Ubeta,float Ialfa,float Ibeta,SMO_Struct_DEF*SMO_Struct)
+void smo_observer(float u_alfa, float u_beta, float i_alfa, float i_beta, smo_struct_t *smo)
 {
-   //
-	SMO_Struct->estimate_Ialfa_D = (Ld*Ualfa)+ (-RLd*SMO_Struct->estimate_Ialfa)
-	                                +(-Ld*SMO_Struct->Valfa);
-	SMO_Struct->estimate_Ibeta_D = (Ld*Ubeta)+ (-RLd*SMO_Struct->estimate_Ibeta)
-	                                +(-Ld*SMO_Struct->Vbeta);
+	smo->est_i_alfa_d = (m_ld*u_alfa) + (-m_rld*smo->est_i_alfa) + (-m_ld*smo->v_alfa);
+	smo->est_i_beta_d = (m_ld*u_beta) + (-m_rld*smo->est_i_beta) + (-m_ld*smo->v_beta);
 	//积分
-	SMO_Struct->estimate_Ialfa += SMO_Struct->estimate_Ialfa_D*FOC_PERIOD;
-	SMO_Struct->estimate_Ibeta +=	SMO_Struct->estimate_Ibeta_D*FOC_PERIOD;
+	smo->est_i_alfa += smo->est_i_alfa_d * FOC_PERIOD;
+	smo->est_i_beta +=	smo->est_i_beta_d * FOC_PERIOD;
 	//实际值-估计值
-  	SMO_Struct->estimate_Ialfa_err = SMO_Struct->estimate_Ialfa - Ialfa;
-	SMO_Struct->estimate_Ibeta_err = SMO_Struct->estimate_Ibeta - Ibeta;
+  	smo->est_i_alfa_err = smo->est_i_alfa - i_alfa;
+	smo->est_i_beta_err = smo->est_i_beta - i_beta;
 	//输出
-	SMO_Struct->Valfa = sign( &SMO_Struct->estimate_Ialfa_err) *Gain_h;
-	SMO_Struct->Vbeta = sign( &SMO_Struct->estimate_Ibeta_err) *Gain_h;
+	smo->v_alfa = sign( &smo->est_i_alfa_err) * m_gain_h;
+	smo->v_beta = sign( &smo->est_i_beta_err) * m_gain_h;
 	//IIR滤波
-	IIR_filter(SMO_Struct->Valfa ,&SMO_Struct->Valfa, &SMO_IIR_LPF_PAR_Ealfa);
-	IIR_filter(SMO_Struct->Vbeta ,&SMO_Struct->Vbeta, &SMO_IIR_LPF_PAR_Ebeta);
+	iir_filter(smo->v_alfa, &smo->v_alfa, &g_smo_iir_lpf_par_ealfa);
+	iir_filter(smo->v_beta, &smo->v_beta, &g_smo_iir_lpf_par_ebeta);
 }
+
 /*
 *PLL控制函数
 *
-*输入Ealfa Ebeta
+*输入 e_alfa e_beta
 *输出 We theta
 *
 */
-void PLL_control(float Ealfa,float Ebeta,PLL_DEF*PLL_Def)
+void pll_control(float e_alfa, float e_beta, pll_struct_t *pll)
 {
-   float err = 0.0f;
-	 err = -Ealfa*arm_cos_f32(PLL_Def->compensation_theta) - Ebeta*arm_sin_f32(PLL_Def->compensation_theta);
-	 PLL_Def->we = PLL_Def->P *err +  PLL_Def->err_sum;
-	 PLL_Def->err_sum += PLL_Def->I * err * FOC_PERIOD;
+    float err = 0.0f;
+	err = -e_alfa * arm_cos_f32(pll->compensation_theta) - e_beta * arm_sin_f32(pll->compensation_theta);
+	pll->we = pll->p *err +  pll->err_sum;
+	pll->err_sum += pll->i * err * FOC_PERIOD;
+
 	//角速度积分->角度
-	PLL_Def->compensation_theta+= PLL_Def->we * FOC_PERIOD;
-		if(PLL_Def->compensation_theta>2.0f*PI)
+	pll->compensation_theta+= pll->we * FOC_PERIOD;
+	if(pll->compensation_theta > DOUBLE_PI)
 	{
-	  PLL_Def->compensation_theta -=2.0f*PI;
+	  pll->compensation_theta -= DOUBLE_PI;
 	}
-	if(PLL_Def->compensation_theta<0.0f*PI)
+
+	if(pll->compensation_theta < 0.0f)
 	{
-	   PLL_Def->compensation_theta +=2.0f*PI;
+	   pll->compensation_theta += DOUBLE_PI;
 	}
-	PLL_Def->theta  =  PLL_Def->compensation_theta;
+
+	pll->theta  =  pll->compensation_theta;
 		
 	 //we输出滤波
-	IIR_filter(PLL_Def->we ,&PLL_Def->we, &PLL_IIR_LPF_PAR);
+	iir_filter(pll->we ,&pll->we, &g_pll_iir_lpf_par);
 	//电机反转补偿π
-	if((PLL_Def->we<-10.0f)&&(g_Speed_Ref<0.0f))
+	if((pll->we < -10.0f) && (g_speed_ref < 0.0f))
 	{
-		PLL_Def->theta +=PI;
+		pll->theta += PI;
 
-		if(PLL_Def->theta>2.0f*PI)
+		if(pll->theta > DOUBLE_PI)
 		{
-			 PLL_Def->theta -=2.0f*PI;
+			pll->theta -= DOUBLE_PI;
 		}
-		if(PLL_Def->theta<0.0f*PI)
+
+		if(pll->theta < 0.0f)
 		{
-			 PLL_Def->theta +=2.0f*PI;
+			pll->theta += DOUBLE_PI;
 		}
 	}
-
 }
 
-void SMO_PLL_Init(SMO_Struct_DEF*SMO_Struct,PLL_DEF*PLL_Def)
+void smo_pll_param_init(smo_struct_t *smo, pll_struct_t *pll)
 {
-		SMO_Struct->estimate_Ialfa = 0.0f;
-		SMO_Struct->estimate_Ialfa_D = 0.0f;
-		SMO_Struct->estimate_Ialfa_err= 0.0f;
-		SMO_Struct->estimate_Ibeta= 0.0f;
-		SMO_Struct->estimate_Ibeta_D= 0.0f;
-		SMO_Struct->estimate_Ibeta_err= 0.0f;
-		SMO_Struct->Valfa= 0.0f;
-		SMO_Struct->Vbeta= 0.0f;
+	smo->est_i_alfa 	= 0.0f;
+	smo->est_i_alfa_d 	= 0.0f;
+	smo->est_i_alfa_err	= 0.0f;
+	smo->est_i_beta		= 0.0f;
+	smo->est_i_beta_d	= 0.0f;
+	smo->est_i_beta_err	= 0.0f;
+	smo->v_alfa			= 0.0f;
+	smo->v_beta			= 0.0f;
 
-		PLL_Def->err_sum = 0.0f;
-		PLL_Def->P = 600.0f;
-		PLL_Def->I = 15000.0f;
-		PLL_Def->theta = 0.0f;
-		PLL_Def->we  =0.0f;
+	pll->err_sum 		= 0.0f;
+	pll->p 				= 600.0f;
+	pll->i 				= 15000.0f;
+	pll->theta 			= 0.0f;
+	pll->we  			= 0.0f;
 }
 
 

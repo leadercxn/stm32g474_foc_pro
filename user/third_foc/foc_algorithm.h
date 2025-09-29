@@ -1,10 +1,7 @@
-#ifndef RTW_HEADER_foc_algorithm_h_
-#define RTW_HEADER_foc_algorithm_h_
+#ifndef __FOC_ALGORITHM_H
+#define __FOC_ALGORITHM_H
 #include <stddef.h>
-#ifndef foc_algorithm_COMMON_INCLUDES_
-# define foc_algorithm_COMMON_INCLUDES_
 #include "rtwtypes.h"
-#endif                               
 
 #include "parameters.h"
 
@@ -22,7 +19,8 @@
 typedef struct tag_RTM RT_MODEL;
 
 
-typedef struct {
+typedef struct
+{
   real_T EKF_States[4];   
   real_T L_Ident_States;     
   real_T R_flux_Ident_States;    
@@ -31,113 +29,95 @@ typedef struct {
   real32_T L_Ident_Interface[2];
   real32_T R_flux_Ident_Output[2];       
   real32_T L_Ident_Output;          
-} FOC_INTERFACE_STATES_DEF;
+} foc_interface_sts_t;
 
 
-typedef struct {
-  real32_T Id_ref;                     
-  real32_T Iq_ref;                     
+typedef struct
+{
+  real32_T id_ref;                     
+  real32_T iq_ref;                     
   real32_T speed_fdk;                  
   real32_T theta;                      
   real32_T ia;                         
   real32_T ib;                         
   real32_T ic;                         
-  real32_T Udc;                        
-  real32_T Tpwm;                       
-  real32_T Rs;                         
-  real32_T Ls;                         
+  real32_T udc;                        
+  real32_T tpwm;                       
+  real32_T rs;                         
+  real32_T ls;
   real32_T flux;                       
-} FOC_INPUT_DEF;
+} foc_input_t;
 
 
-typedef struct {
+typedef struct
+{
   real32_T Tcmp1;                      
   real32_T Tcmp2;                      
   real32_T Tcmp3;                      
   real32_T EKF[4];  //0:i_alpha  1:ibeta  2:角速度omiga  3:转子位置 theta
   real32_T L_RF[3];                    
-} FOC_OUTPUT_DEF;
+} foc_output_t;
 
 
 typedef struct
 {
-  real32_T Ia;
-  real32_T Ib;
-  real32_T Ic;
-}CURRENT_ABC_DEF;
+  real32_T ia;
+  real32_T ib;
+  real32_T ic;
+} current_abc_t;
 
 typedef struct
 {
-  real32_T Ialpha;
-  real32_T Ibeta;
-}CURRENT_ALPHA_BETA_DEF;
+  real32_T i_alpha;
+  real32_T i_beta;
+} current_alpha_beta_t;
 
 typedef struct
 {
-  real32_T Valpha;
-  real32_T Vbeta;
-}VOLTAGE_ALPHA_BETA_DEF;
+  real32_T v_alpha;
+  real32_T v_beta;
+} volt_alpha_beta_t;
 
 typedef struct
 {
-  real32_T Cos;
-  real32_T Sin;
-}TRANSF_COS_SIN_DEF;
+  real32_T cos;
+  real32_T sin;
+} transf_cos_sin_t;
 
 typedef struct
 {
-  real32_T Id;
-  real32_T Iq;
-}CURRENT_DQ_DEF;
+  real32_T id;
+  real32_T iq;
+} current_dq_t;
 
 typedef struct
 {
-  real32_T Vd;
-  real32_T Vq;
-}VOLTAGE_DQ_DEF;
+  real32_T vd;
+  real32_T vq;
+} volt_dq_t;
 
 typedef struct
 {
-  real32_T P_Gain;
-  real32_T I_Gain;
-  real32_T D_Gain;
-  real32_T B_Gain;
-  real32_T Max_Output;
-  real32_T Min_Output;
-  real32_T I_Sum;
-}CURRENT_PID_DEF;
-
-extern CURRENT_ALPHA_BETA_DEF Current_Ialpha_beta;
+  real32_T p_gain;
+  real32_T i_gain;
+  real32_T d_gain;
+  real32_T b_gain;
+  real32_T max_output;
+  real32_T min_output;
+  real32_T i_sum;
+} current_pid_t;
 
 struct tag_RTM {
   const char_T *errorStatus;
 };
 
-extern FOC_INTERFACE_STATES_DEF FOC_Interface_states;
+extern foc_input_t    g_foc_input;
+extern foc_output_t   g_foc_output;
+extern volt_dq_t      g_voltage_dq;
+extern current_dq_t   g_current_dq;
 
-
-extern FOC_INPUT_DEF  g_FOC_Input;
-extern FOC_OUTPUT_DEF g_FOC_Output;
-extern VOLTAGE_DQ_DEF Voltage_DQ;
-extern CURRENT_DQ_DEF Current_Idq;
-
-extern void foc_algorithm_initialize(void);
+extern void foc_algorithm_init(void);
 extern void foc_algorithm_step(void);
-
-
-
-
-extern real32_T D_PI_I;
-extern real32_T D_PI_KB;
-extern real32_T D_PI_LOW_LIMIT;
-extern real32_T D_PI_P;
-extern real32_T D_PI_UP_LIMIT;
-extern real32_T Q_PI_I;
-extern real32_T Q_PI_KB;
-extern real32_T Q_PI_LOW_LIMIT;
-extern real32_T Q_PI_P;
-extern real32_T Q_PI_UP_LIMIT;
-
 
 extern RT_MODEL *const rtM;
 

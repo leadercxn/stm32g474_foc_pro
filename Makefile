@@ -135,11 +135,11 @@ user/src/clark.c				\
 user/src/park.c					\
 user/src/vofa.c					\
 user/third_foc/foc_algorithm.c 	\
-user/third_foc/IIR_LPF.c 		\
-user/third_foc/SMO_PLL.c 		\
+user/third_foc/iir_lpf.c 		\
+user/third_foc/smo_pll.c 		\
 user/third_foc/speed_pid.c 		\
 user/third_foc/stm32_ekf_wrapper.c 	\
-user/third_foc/IF_start.c 		\
+user/third_foc/if_start.c 		\
 
 # ASM sources
 ASM_SOURCES =  \

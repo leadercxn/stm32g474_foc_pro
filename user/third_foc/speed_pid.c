@@ -4,22 +4,22 @@
 #include "speed_pid.h"
 #include "parameters.h"
 
-#define SPEED_PID_PERIOD 0.001F
+#define SPEED_PID_PERIOD    0.001F
 
-real32_T SPEED_PI_I   = 5.0F;
-real32_T SPEED_PI_KB  = 0.015F;
-real32_T SPEED_PI_LOW_LIMIT = -6.0F;
-real32_T SPEED_PI_P   = 0.003F;
-real32_T SPEED_PI_UP_LIMIT = 6.0F;
+#define SPEED_PI_I          5.0f
+#define SPEED_PI_KB         0.015f
+#define SPEED_PI_LOW_LIMIT  -6.0f
+#define SPEED_PI_P          0.003f
+#define SPEED_PI_UP_LIMIT   6.0f
 
                    
-real32_T g_Speed_Ref;        //速度参考          
-real32_T g_Speed_Fdk;        //速度反馈          
-real32_T g_Speed_Pid_Out;    //速度PID输出，也就是Q轴电流环的参考             
+real32_T g_speed_ref;        //速度参考, 目标速度， rad/s
+real32_T g_speed_fdk;        //速度反馈，实际速度,  rad/s
+real32_T g_speed_pid_out;    //速度PID输出，也就是Q轴电流环的参考             
 
-SPEED_PID_DEF g_Speed_Pid;
+speed_pid_t g_speed_pid;
 
-void Speed_Pid_Calc(real32_T ref_temp,real32_T fdb_temp,real32_T* out_temp,SPEED_PID_DEF* current_pid_temp)
+void speed_pid_cal(real32_T ref_temp, real32_T fdb_temp, real32_T* out_temp, speed_pid_t* current_pid_temp)
 {
 
   real32_T error;
@@ -75,39 +75,39 @@ void Speed_Pid_Calc(real32_T ref_temp,real32_T fdb_temp,real32_T* out_temp,SPEED
       }
 #endif
 
-  temp = (error + current_pid_temp->I_Sum) * current_pid_temp->P_Gain;
+  temp = (error + current_pid_temp->i_sum) * current_pid_temp->p_gain;
 
-  if (temp > current_pid_temp->Max_Output)
+  if (temp > current_pid_temp->max_output)
   {
-    *out_temp = current_pid_temp->Max_Output;
+    *out_temp = current_pid_temp->max_output;
   }
-  else if (temp < current_pid_temp->Min_Output)
+  else if (temp < current_pid_temp->min_output)
   {
-    *out_temp = current_pid_temp->Min_Output;
+    *out_temp = current_pid_temp->min_output;
   }
   else
   {
     *out_temp = temp;
   }
 
-  current_pid_temp->I_Sum += ( (*out_temp - temp) * current_pid_temp->B_Gain + current_pid_temp->I_Gain* error) * SPEED_PID_PERIOD;
+  current_pid_temp->i_sum += ( (*out_temp - temp) * current_pid_temp->b_gain + current_pid_temp->i_gain* error) * SPEED_PID_PERIOD;
 }
 
 
-void speed_pid_initialize(void)
+void speed_pid_param_init(void)
 {
-  g_Speed_Pid.P_Gain = SPEED_PI_P;
-  g_Speed_Pid.I_Gain = SPEED_PI_I;
-  g_Speed_Pid.B_Gain = SPEED_PI_KB;
-  g_Speed_Pid.Max_Output = SPEED_PI_UP_LIMIT;
-  g_Speed_Pid.Min_Output = SPEED_PI_LOW_LIMIT;
-  g_Speed_Pid.I_Sum = 0.0f;
+  g_speed_pid.p_gain = SPEED_PI_P;
+  g_speed_pid.i_gain = SPEED_PI_I;
+  g_speed_pid.b_gain = SPEED_PI_KB;
+  g_speed_pid.max_output = SPEED_PI_UP_LIMIT;
+  g_speed_pid.min_output = SPEED_PI_LOW_LIMIT;
+  g_speed_pid.i_sum  = 0.0f;
 
-  g_Speed_Pid.speed_step_add    = 0.5f;
-	g_Speed_Pid.speed_ref_last    = 0.0f;
-	g_Speed_Pid.speed_start_flag  = 0;
-	g_Speed_Pid.err_time_count    = 0;
-	g_Speed_Pid.err_time_flag     = 0;
+  g_speed_pid.speed_step_add    = 0.5f;
+	g_speed_pid.speed_ref_last    = 0.0f;
+	g_speed_pid.speed_start_flag  = 0;
+	g_speed_pid.err_time_count    = 0;
+	g_speed_pid.err_time_flag     = 0;
 }
 
 

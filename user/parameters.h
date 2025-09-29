@@ -9,10 +9,10 @@
 
 #include "speed_pid.h"
 #include "foc_algorithm.h"
-#include "SMO_PLL.h"
-#include "IIR_LPF.h"
+#include "smo_pll.h"
+#include "iir_lpf.h"
 #include "arm_math.h"
-#include "IF_start.h"
+#include "if_start.h"
 
 #define SYS_CLK_FREQ    170000000
 #define PWM_FREQ        20000       //20K
@@ -94,8 +94,8 @@ typedef struct
 
     motor_start_sta_e   motor_start_acc_sta;    //电机启动加速状态
 
-    float    motor_speed_set;    // 电机设定速度，单位RPM
-    float    motor_speed_real;   // 电机实际速度，单位RPM
+    float       motor_speed_set;    // 电机设定速度，单位RPM
+    float       motor_speed_real;   // 电机实际速度，单位RPM
 
     float       target_uq;          // q轴电压 单位V
     float       target_iq;          // q轴电流 单位A
@@ -105,8 +105,6 @@ typedef struct
     float       curr_theta;         //  当前角度值
 
     float       target_step_angle;  // 步进角度，单位：弧度
-
-    float       foc_ts;             // FOC计算周期，单位s
 
     float       ekf_theta;
     float       ekf_angle_speed;

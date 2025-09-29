@@ -1,41 +1,38 @@
-#ifndef _SMO_PLL_H
-#define _SMO_PLL_H
+#ifndef __SMO_PLL_H
+#define __SMO_PLL_H
+
 #include "parameters.h"
 
-typedef struct SMO
+typedef struct
 {
-	float estimate_Ialfa;
-	float estimate_Ibeta;
-  float estimate_Ialfa_D;
-	float estimate_Ibeta_D;
+	float est_i_alfa;
+	float est_i_beta;
+  	float est_i_alfa_d;
+	float est_i_beta_d;
 	
-	float estimate_Ialfa_err;
-	float estimate_Ibeta_err;
-	float Valfa;
-	float Vbeta;
+	float est_i_alfa_err;
+	float est_i_beta_err;
+	float v_alfa;
+	float v_beta;
+} smo_struct_t;
 
-
-}SMO_Struct_DEF;
-
-typedef struct PLL
+typedef struct
 {
-   float we;
-	 float theta;
-	 float compensation_theta;
-	 float P;
-	 float I;
-	 float err_sum;
-
-}PLL_DEF;
-
+   	float we;
+	float theta;
+	float compensation_theta;
+	float p;
+	float i;
+	float err_sum;
+} pll_struct_t;
 
 
-extern PLL_DEF PLL_def;
 
-extern SMO_Struct_DEF SMO_Struct_def;
+extern pll_struct_t g_pll;
+extern smo_struct_t g_smo;
 
-void SMO_Observer(float Ualfa,float Ubeta,float Ialfa,float Ibeta,SMO_Struct_DEF*SMO_Struct);
-void PLL_control(float Ealfa,float Ebeta,PLL_DEF*PLL_Def);
-void SMO_PLL_Init(SMO_Struct_DEF*SMO_Struct,PLL_DEF*PLL_Def);
+void smo_observer(float u_alfa, float u_beta, float i_alfa, float i_beta, smo_struct_t *smo);
+void pll_control(float e_alfa, float e_beta, pll_struct_t *pll);
+void smo_pll_param_init(smo_struct_t *smo, pll_struct_t *pll);
 #endif
 

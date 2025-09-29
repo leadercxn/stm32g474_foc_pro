@@ -1,11 +1,9 @@
 
-#ifndef RTW_HEADER_speed_pid_h_
-#define RTW_HEADER_speed_pid_h_
+#ifndef __SPEED_PID_H
+#define __SPEED_PID_H
+
 #include <stddef.h>
-#ifndef speed_pid_COMMON_INCLUDES_
-# define speed_pid_COMMON_INCLUDES_
 #include "rtwtypes.h"
-#endif                               
 
 #ifndef rtmGetErrorStatus
 # define rtmGetErrorStatus(rtm)        ((rtm)->errorStatus)
@@ -19,19 +17,19 @@
 
 
 
-extern real32_T g_Speed_Ref;                 
-extern real32_T g_Speed_Fdk;                 
-extern real32_T g_Speed_Pid_Out;             
+extern real32_T g_speed_ref;                 
+extern real32_T g_speed_fdk;                 
+extern real32_T g_speed_pid_out;             
 
 typedef struct
 {
-  real32_T P_Gain;
-  real32_T I_Gain;
-  real32_T D_Gain;
-  real32_T B_Gain;
-  real32_T Max_Output;
-  real32_T Min_Output;
-  real32_T I_Sum;
+  real32_T p_gain;
+  real32_T i_gain;
+  real32_T d_gain;
+  real32_T b_gain;
+  real32_T max_output;
+  real32_T min_output;
+  real32_T i_sum;
 
   float last_speed;
 	float speed_step_add;
@@ -39,22 +37,15 @@ typedef struct
 	uint16_T err_time_count;
 	uint16_T err_time_flag;
 
-	float speed_ref_last;
+	float   speed_ref_last;
 	uint8_T speed_start_flag;
 	uint8_T speed_reversal_to_forward;
 	uint8_T speed_add_flag;
-}SPEED_PID_DEF;
+} speed_pid_t;
 
-extern SPEED_PID_DEF g_Speed_Pid;
+extern speed_pid_t g_speed_pid;
 
-extern void speed_pid_initialize(void);
-extern void Speed_Pid_Calc(real32_T ref_temp,real32_T fdb_temp,real32_T* out_temp,SPEED_PID_DEF* current_pid_temp);
-
-extern real32_T SPEED_PI_I;
-extern real32_T SPEED_PI_KB;
-extern real32_T SPEED_PI_LOW_LIMIT;
-extern real32_T SPEED_PI_P;
-extern real32_T SPEED_PI_UP_LIMIT;
-
+extern void speed_pid_param_init(void);
+extern void speed_pid_cal(real32_T ref_temp, real32_T fdb_temp, real32_T* out_temp, speed_pid_t* current_pid_temp);
 
 #endif                            

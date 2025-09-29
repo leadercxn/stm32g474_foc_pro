@@ -16,8 +16,8 @@ union据类型里面的数据存放在相同的物理空间
 typedef union
 {
   	float fdate;
-	unsigned long Ldate;
-}Floatlongtype;
+	unsigned long uldate;
+}float_ulong_u;
 
 /*
 将浮点数据转换为单四个字节的数据，用于传输
@@ -25,13 +25,13 @@ typedef union
 */
 void float_to_byte(float date, unsigned char buf[4])
 {
-	Floatlongtype f1;
+	float_ulong_u f1;
 
 	f1.fdate = date;
-   	buf[0] = (unsigned char)f1.Ldate;
-   	buf[1] = (unsigned char)(f1.Ldate>>8);
-   	buf[2] = (unsigned char)(f1.Ldate>>16);
-   	buf[3] = (unsigned char)(f1.Ldate>>24);
+   	buf[0] = (unsigned char)f1.uldate;
+   	buf[1] = (unsigned char)(f1.uldate>>8);
+   	buf[2] = (unsigned char)(f1.uldate>>16);
+   	buf[3] = (unsigned char)(f1.uldate>>24);
 }
 
 /*
@@ -42,7 +42,6 @@ title：为1上传结束帧尾，表示数据上传完毕，其他值表示后�
 void justfloat_update(float date, unsigned char title)
 {
     unsigned char buf[4];
-	// unsigned char DMA_BUF[8];
 	unsigned char i  =0;
 
     float_to_byte(date, buf);
@@ -50,10 +49,8 @@ void justfloat_update(float date, unsigned char title)
 	/**********不使用DMA传输*************/	
 	for(i = 0; i < 4 ; i++)
 	{
-	  	//while(__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TC) != SET){}; //循环发送,直到发送完毕   
-	      	//HAL_UART_Transmit(&huart1, &buf[i], 1, 1);
-		while ((USART1->ISR & 0X40) == 0);
-		USART1->TDR =  buf[i]; 
+		while ((USART1->ISR & 0X40) == 0);//循环发送,直到发送完毕
+			USART1->TDR =  buf[i]; 
 	}
 	
 	
@@ -62,10 +59,8 @@ void justfloat_update(float date, unsigned char title)
 	{
 	  	for(i = 0; i < 4; i++)
 	 	{
-	  		//while(__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TC) != SET){}; //循环发送,直到发送完毕   
-				//HAL_UART_Transmit(&huart1, &tail[i], 1, 1); 
-			while ((USART1->ISR & 0X40) == 0);
-			USART1->TDR =  tail[i]; 
+			while ((USART1->ISR & 0X40) == 0);//循环发送,直到发送完毕   
+				USART1->TDR =  tail[i]; 
 		}		
 	}
 }

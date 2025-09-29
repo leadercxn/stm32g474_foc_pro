@@ -24,7 +24,6 @@
 
 static void param_init(void)
 {
-    g_app_param.foc_ts    = FOC_PERIOD;   //依据 adc_inj_start 的执行频率
     g_app_param.ekf_theta = 0.0f;
 
 #if 0
@@ -39,10 +38,10 @@ static void param_init(void)
     g_id_pi.iout_max = 10.0f;
 #endif
 
-    g_FOC_Input.Rs    = MOTOR_PHASE_RES;
-    g_FOC_Input.Ls    = MOTOR_PHASE_LS;
-    g_FOC_Input.flux  = MOTOR_FLUXLINK;
-    g_FOC_Input.Tpwm  = PWM_TIM_PULSE_TPWM;
+    g_foc_input.rs    = MOTOR_PHASE_RES;
+    g_foc_input.ls    = MOTOR_PHASE_LS;
+    g_foc_input.flux  = MOTOR_FLUXLINK;
+    g_foc_input.tpwm  = PWM_TIM_PULSE_TPWM;
 }
 
 /**
@@ -82,10 +81,10 @@ int main(void)
   float angle = PI * 0.2f;
 
 #if 0
-  VOLTAGE_DQ_DEF      t_vdq;
-  TRANSF_COS_SIN_DEF  t_cos_sin;
+  volt_dq_t           t_vdq;
+  transf_cos_sin_t    t_cos_sin;
   float               t_theta = PI / 5;
-  VOLTAGE_ALPHA_BETA_DEF t_v_alpha_beta;
+  volt_alpha_beta_t   t_v_alpha_beta;
 
   t_vdq.Vd = 0;
   t_vdq.Vq = 3.0f;
@@ -130,13 +129,13 @@ int main(void)
         gpio_output_set(LED_STAT_PORT, LED_STAT_PIN, led_stat);
         
 #if 0
-        Angle_To_Cos_Sin(t_theta, &t_cos_sin);
-        Rev_Park_Transf(t_vdq, t_cos_sin, &t_v_alpha_beta);
-        SVPWM_Calc(t_v_alpha_beta, 24.0, g_FOC_Input.Tpwm);
+        angle_to_cos_sin(t_theta, &t_cos_sin);
+        rev_park_transf(t_vdq, t_cos_sin, &t_v_alpha_beta);
+        svpwm_calc(t_v_alpha_beta, 24.0, g_foc_input.tpwm);
 
-        TIM8->CCR1 = (uint16_t)(g_FOC_Output.Tcmp1);     
-	      TIM8->CCR2 = (uint16_t)(g_FOC_Output.Tcmp2);
-	      TIM8->CCR3 = (uint16_t)(g_FOC_Output.Tcmp3);
+        TIM8->CCR1 = (uint16_t)(g_foc_output.Tcmp1);     
+	      TIM8->CCR2 = (uint16_t)(g_foc_output.Tcmp2);
+	      TIM8->CCR3 = (uint16_t)(g_foc_output.Tcmp3);
 
         t_theta += PI / 3;
 
@@ -147,15 +146,6 @@ int main(void)
 #endif
 
 //        sin_cal_speed_compare();
-
-#if 0
-        trace_debug("sys time ms %lu\r\n", sys_time_ms_get());
-
-        trace_debug("adc 1-%d, 2-%d, 3-%d, 4-%d, 5-%d, 6-%d, 7-%d, 8-%d\r\n", \
-        adc_reg_sample_data_get(ADC_CH_U_VOLT), adc_reg_sample_data_get(ADC_CH_V_VOLT), adc_reg_sample_data_get(ADC_CH_W_VOLT), \
-        adc_reg_sample_data_get(ADC_CH_VBUS), adc_reg_sample_data_get(ADC_CH_TEMP), \
-        adc_inj_sample_data_get(0), adc_inj_sample_data_get(1), adc_inj_sample_data_get(2) );
-#endif
 
 #if 0
         trace_debug("UV %.2fV, VV %.2fV, WV %.2fV, UI %.4fA, VI %.4fA, WI %.4fA, VBUS %.1fV, T %.1fC \r\n", \
@@ -177,21 +167,6 @@ int main(void)
         trace_debug("angle %f\r\n", angle);
 #endif
       }
-
-//vofa 打印三相电压，电流
-#if 0
-      uint32_t vofa_send_ticks = 0;
-
-      if(sys_time_ms_get() - vofa_send_ticks >= 10)
-      {
-          vofa_send_ticks = sys_time_ms_get();
-
-          VOFA_PRINTF("%.2f, %.2f, %.2f, %.4f, %.4f, %.4f\n", adc_sample_physical_value_get(ADC_CH_U_VOLT), \
-                 adc_sample_physical_value_get(ADC_CH_V_VOLT), adc_sample_physical_value_get(ADC_CH_W_VOLT), \
-                 adc_sample_physical_value_get(ADC_CH_U_I), adc_sample_physical_value_get(ADC_CH_V_I),     \
-                 adc_sample_physical_value_get(ADC_CH_W_I));
-      }
-#endif
 
       sensors_task();         //传感器任务
 
