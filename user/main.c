@@ -133,9 +133,9 @@ int main(void)
         rev_park_transf(t_vdq, t_cos_sin, &t_v_alpha_beta);
         svpwm_calc(t_v_alpha_beta, 24.0, g_foc_input.tpwm);
 
-        TIM8->CCR1 = (uint16_t)(g_foc_output.Tcmp1);     
-	      TIM8->CCR2 = (uint16_t)(g_foc_output.Tcmp2);
-	      TIM8->CCR3 = (uint16_t)(g_foc_output.Tcmp3);
+        TIM8->CCR1 = (uint16_t)(g_foc_output.tcmp1);     
+	      TIM8->CCR2 = (uint16_t)(g_foc_output.tcmp2);
+	      TIM8->CCR3 = (uint16_t)(g_foc_output.tcmp3);
 
         t_theta += PI / 3;
 

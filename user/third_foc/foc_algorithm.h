@@ -21,14 +21,14 @@ typedef struct tag_RTM RT_MODEL;
 
 typedef struct
 {
-  real_T EKF_States[4];   
-  real_T L_Ident_States;     
-  real_T R_flux_Ident_States;    
-  real32_T EKF_Interface[7];
-  real32_T R_flux_Ident_Interface[3];
-  real32_T L_Ident_Interface[2];
-  real32_T R_flux_Ident_Output[2];       
-  real32_T L_Ident_Output;          
+  real_T ekf_sts[4];
+  real_T l_ident_sts;
+  real_T r_flux_ident_sts;
+  real32_T ekf_interface[7];
+  real32_T r_flux_ident_interface[3];
+  real32_T l_ident_interface[2];
+  real32_T r_flux_ident_output[2];
+  real32_T l_ident_output;
 } foc_interface_sts_t;
 
 
@@ -51,11 +51,11 @@ typedef struct
 
 typedef struct
 {
-  real32_T Tcmp1;                      
-  real32_T Tcmp2;                      
-  real32_T Tcmp3;                      
-  real32_T EKF[4];  //0:i_alpha  1:ibeta  2:角速度omiga  3:转子位置 theta
-  real32_T L_RF[3];                    
+  real32_T tcmp1;
+  real32_T tcmp2;
+  real32_T tcmp3;
+  real32_T ekf[4];  //0:i_alpha  1:ibeta  2:角速度omiga  3:转子位置 theta
+  real32_T l_rf[3];
 } foc_output_t;
 
 

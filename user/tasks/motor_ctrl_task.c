@@ -201,19 +201,19 @@ void motor_run(void)
                     g_foc_input.iq_ref = g_app_param.curr_iq;           //速度还没有闭环之前, 使用受限Iq，避免跑飞
                     g_speed_pid.i_sum  = g_app_param.curr_iq;
 
-                    if(g_foc_output.EKF[2] > SPEED_LOOP_CLOSE_RAD_S)    //检测速度是否达标速度闭环
+                    if(g_foc_output.ekf[2] > SPEED_LOOP_CLOSE_RAD_S)    //检测速度是否达标速度闭环
                     {
                         g_app_param.is_speed_ring_start = true;
                     }
                 }
                 else                                                    //开始速度闭环
                 {
-                    g_speed_fdk         = g_foc_output.EKF[2];          //使用卡尔曼估算的角速度
+                    g_speed_fdk         = g_foc_output.ekf[2];          //使用卡尔曼估算的角速度
                     g_foc_input.iq_ref  = g_speed_pid_out;              //使用速度环的输出值作为目标Iq
                 }
 
-                g_foc_input.theta = g_foc_output.EKF[3];    //因为没有使用高频注入--所以没有角度切换--直接一开始就是用卡尔曼估算角度
-                g_speed_fdk       = g_foc_output.EKF[2];
+                g_foc_input.theta = g_foc_output.ekf[3];    //因为没有使用高频注入--所以没有角度切换--直接一开始就是用卡尔曼估算角度
+                g_speed_fdk       = g_foc_output.ekf[2];
 
                 g_foc_input.udc     = adc_sample_physical_value_get(ADC_CH_VBUS);
                 g_foc_input.ia      = adc_sample_physical_value_get(ADC_CH_U_I);
@@ -224,9 +224,9 @@ void motor_run(void)
                 //计算好后赋值到PWM_CCRX比较寄存器通道
    	            foc_algorithm_step();
 
-                TIM8->CCR1 = (uint16_t)(g_foc_output.Tcmp1);     
-	            TIM8->CCR2 = (uint16_t)(g_foc_output.Tcmp2);
-	            TIM8->CCR3 = (uint16_t)(g_foc_output.Tcmp3);
+                TIM8->CCR1 = (uint16_t)(g_foc_output.tcmp1);     
+	            TIM8->CCR2 = (uint16_t)(g_foc_output.tcmp2);
+	            TIM8->CCR3 = (uint16_t)(g_foc_output.tcmp3);
             }
             else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC_END)     //加速已完成，切换到恒速
             {
@@ -301,7 +301,7 @@ void motor_vf_run(void)
 
 //速度稳定后切入到速度环
 #if 1
-                    if( (g_foc_output.EKF[2] > 60.0f) || (g_foc_output.EKF[2] < -60.0f) )    //检测速度是否达标速度闭环
+                    if( (g_foc_output.ekf[2] > 60.0f) || (g_foc_output.ekf[2] < -60.0f) )    //检测速度是否达标速度闭环
                     {
                         vf_start_cnt++;
                         if(vf_start_cnt > 40000)                       //速度环达标超4S后，转到速度闭环
@@ -321,8 +321,8 @@ void motor_vf_run(void)
                 }
                 else
                 {
-                    g_speed_fdk         = g_foc_output.EKF[2];          //使用卡尔曼估算的角速度
-                    g_foc_input.theta   = g_foc_output.EKF[3];          //使用卡尔曼估算角度
+                    g_speed_fdk         = g_foc_output.ekf[2];          //使用卡尔曼估算的角速度
+                    g_foc_input.theta   = g_foc_output.ekf[3];          //使用卡尔曼估算角度
                     g_foc_input.iq_ref  = g_speed_pid_out;              //使用速度环的输出值作为目标Iq
                 }
 
@@ -335,9 +335,9 @@ void motor_vf_run(void)
                 //计算好后赋值到PWM_CCRX比较寄存器通道
    	            foc_algorithm_step();
 
-                TIM8->CCR1 = (uint16_t)(g_foc_output.Tcmp1);     
-	            TIM8->CCR2 = (uint16_t)(g_foc_output.Tcmp2);
-	            TIM8->CCR3 = (uint16_t)(g_foc_output.Tcmp3);
+                TIM8->CCR1 = (uint16_t)(g_foc_output.tcmp1);     
+	            TIM8->CCR2 = (uint16_t)(g_foc_output.tcmp2);
+	            TIM8->CCR3 = (uint16_t)(g_foc_output.tcmp3);
             }
             else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC_END)     //加速已完成，切换到恒速
             {
@@ -411,15 +411,15 @@ void motor_if_run(void)
                     g_speed_pid.i_sum = g_app_param.curr_iq;;
 
 
-                    if(g_foc_output.EKF[2] > SPEED_LOOP_CLOSE_RAD_S)    //检测速度是否达标速度闭环
+                    if(g_foc_output.ekf[2] > SPEED_LOOP_CLOSE_RAD_S)    //检测速度是否达标速度闭环
                     {
                         g_app_param.is_speed_ring_start = true;
                     }
                 }
                 else                                                    //开始速度闭环
                 {
-                    g_foc_input.theta   = g_foc_output.EKF[3];          //使用卡尔曼估算角度
-                    g_speed_fdk         = g_foc_output.EKF[2];          //使用卡尔曼估算的角速度
+                    g_foc_input.theta   = g_foc_output.ekf[3];          //使用卡尔曼估算角度
+                    g_speed_fdk         = g_foc_output.ekf[2];          //使用卡尔曼估算的角速度
                     g_foc_input.iq_ref  = g_speed_pid_out;              //使用速度环的输出值作为目标Iq
                 }
 
@@ -432,9 +432,9 @@ void motor_if_run(void)
                 //计算好后赋值到PWM_CCRX比较寄存器通道
    	            foc_algorithm_step();
 
-                TIM8->CCR1 = (uint16_t)(g_foc_output.Tcmp1);     
-	            TIM8->CCR2 = (uint16_t)(g_foc_output.Tcmp2);
-	            TIM8->CCR3 = (uint16_t)(g_foc_output.Tcmp3);
+                TIM8->CCR1 = (uint16_t)(g_foc_output.tcmp1);     
+	            TIM8->CCR2 = (uint16_t)(g_foc_output.tcmp2);
+	            TIM8->CCR3 = (uint16_t)(g_foc_output.tcmp3);
             }
             else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC_END)     //加速已完成，切换到恒速
             {
@@ -456,8 +456,8 @@ void motor_if_run(void)
  */
 static void vofa_send(void)
 {
-    justfloat_update(g_foc_output.EKF[3], 0);       //卡尔曼估算角度 -- 0
-    justfloat_update(g_foc_output.EKF[2], 0);       //卡尔曼估算速度 -- 1
+    justfloat_update(g_foc_output.ekf[3], 0);       //卡尔曼估算角度 -- 0
+    justfloat_update(g_foc_output.ekf[2], 0);       //卡尔曼估算速度 -- 1
     justfloat_update(g_pll.theta, 0);               //SMO估算角度   -- 2
     justfloat_update(g_pll.we,    0);               //SMO角速度     -- 3
     justfloat_update(g_current_dq.iq,    0);        //当前Iq        -- 4

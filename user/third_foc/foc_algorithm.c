@@ -57,107 +57,115 @@ static void clarke_transf(current_abc_t current_abc_temp, current_alpha_beta_t* 
 void svpwm_calc(volt_alpha_beta_t v_alpha_beta_temp, real32_T udc_temp, real32_T tpwm_temp)
 {
   int32_T sector;
-  real32_T Tcmp1,Tcmp2,Tcmp3,Tx,Ty,f_temp,Ta,Tb,Tc;
+  real32_T tcmp1, tcmp2, tcmp3, tx, ty, f_temp, ta, tb, tc;
+
   sector = 0;
-  Tcmp1 = 0.0F;
-  Tcmp2 = 0.0F;
-  Tcmp3 = 0.0F;
-  if (v_alpha_beta_temp.v_beta > 0.0F) {
+  tcmp1 = 0.0F;
+  tcmp2 = 0.0F;
+  tcmp3 = 0.0F;
+
+  if (v_alpha_beta_temp.v_beta > 0.0F)
+  {
     sector = 1;
   }
-  
-  if ((1.73205078F * v_alpha_beta_temp.v_alpha - v_alpha_beta_temp.v_beta) / 2.0F > 0.0F) {
+
+  if ((1.73205078F * v_alpha_beta_temp.v_alpha - v_alpha_beta_temp.v_beta) / 2.0F > 0.0F)
+  {
     sector += 2;
   }
-  
-  if ((-1.73205078F * v_alpha_beta_temp.v_alpha - v_alpha_beta_temp.v_beta) / 2.0F > 0.0F) {
+
+  if ((-1.73205078F * v_alpha_beta_temp.v_alpha - v_alpha_beta_temp.v_beta) / 2.0F > 0.0F)
+  {
     sector += 4;
   }
 
 //  trace_debug("sector %d, alpha %.3f, beta %.3f\r\n", sector, v_alpha_beta_temp.v_alpha, v_alpha_beta_temp.v_beta);
 
-  switch (sector) {
-  case 1:
-    Tx = (-1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp);
-    Ty = (1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp);
-    break;
-    
-  case 2:
-    Tx = (1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp);
-    Ty = -(1.73205078F * v_alpha_beta_temp.v_beta * tpwm_temp / udc_temp);
-    break;
-    
-  case 3:
-    Tx = -((-1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp));
-    Ty = 1.73205078F * v_alpha_beta_temp.v_beta * tpwm_temp / udc_temp;
-    break;
-    
-  case 4:
-    Tx = -(1.73205078F * v_alpha_beta_temp.v_beta * tpwm_temp / udc_temp);
-    Ty = (-1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp);
-    break;
-    
-  case 5:
-    Tx = 1.73205078F * v_alpha_beta_temp.v_beta * tpwm_temp / udc_temp;
-    Ty = -((1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp));
-    break;
-    
-  default:
-    Tx = -((1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp));
-    Ty = -((-1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp));
-    break;
+  switch (sector)
+  {
+    case 1:
+      tx = (-1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp);
+      ty = (1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp);
+      break;
+
+    case 2:
+      tx = (1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp);
+      ty = -(1.73205078F * v_alpha_beta_temp.v_beta * tpwm_temp / udc_temp);
+      break;
+
+    case 3:
+      tx = -((-1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp));
+      ty = 1.73205078F * v_alpha_beta_temp.v_beta * tpwm_temp / udc_temp;
+      break;
+
+    case 4:
+      tx = -(1.73205078F * v_alpha_beta_temp.v_beta * tpwm_temp / udc_temp);
+      ty = (-1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp);
+      break;
+
+    case 5:
+      tx = 1.73205078F * v_alpha_beta_temp.v_beta * tpwm_temp / udc_temp;
+      ty = -((1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp));
+      break;
+
+    default:
+      tx = -((1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp));
+      ty = -((-1.5F * v_alpha_beta_temp.v_alpha + 0.866025388F * v_alpha_beta_temp.v_beta) * (tpwm_temp / udc_temp));
+      break;
   }
   
-  f_temp = Tx + Ty;
-  if (f_temp > tpwm_temp) {
-    Tx /= f_temp;
-    Ty /= (Tx + Ty);
+  f_temp = tx + ty;
+  if (f_temp > tpwm_temp)
+  {
+    tx /= f_temp;
+    ty /= (tx + ty);
   }
   
-  Ta = (tpwm_temp - (Tx + Ty)) / 4.0F;
-  Tb = Tx / 2.0F + Ta;
-  Tc = Ty / 2.0F + Tb;
-  switch (sector) {
-  case 1:
-    Tcmp1 = Tb;
-    Tcmp2 = Ta;
-    Tcmp3 = Tc;
-    break;
-    
-  case 2:
-    Tcmp1 = Ta;
-    Tcmp2 = Tc;
-    Tcmp3 = Tb;
-    break;
-    
-  case 3:
-    Tcmp1 = Ta;
-    Tcmp2 = Tb;
-    Tcmp3 = Tc;
-    break;
-    
-  case 4:
-    Tcmp1 = Tc;
-    Tcmp2 = Tb;
-    Tcmp3 = Ta;
-    break;
-    
-  case 5:
-    Tcmp1 = Tc;
-    Tcmp2 = Ta;
-    Tcmp3 = Tb;
-    break;
-    
-  case 6:
-    Tcmp1 = Tb;
-    Tcmp2 = Tc;
-    Tcmp3 = Ta;
-    break;
+  ta = (tpwm_temp - (tx + ty)) / 4.0F;
+  tb = tx / 2.0F + ta;
+  tc = ty / 2.0F + tb;
+  switch (sector)
+  {
+    case 1:
+      tcmp1 = tb;
+      tcmp2 = ta;
+      tcmp3 = tc;
+      break;
+
+    case 2:
+      tcmp1 = ta;
+      tcmp2 = tc;
+      tcmp3 = tb;
+      break;
+
+    case 3:
+      tcmp1 = ta;
+      tcmp2 = tb;
+      tcmp3 = tc;
+      break;
+
+    case 4:
+      tcmp1 = tc;
+      tcmp2 = tb;
+      tcmp3 = ta;
+      break;
+
+    case 5:
+      tcmp1 = tc;
+      tcmp2 = ta;
+      tcmp3 = tb;
+      break;
+
+    case 6:
+      tcmp1 = tb;
+      tcmp2 = tc;
+      tcmp3 = ta;
+      break;
   }
-  
-  g_foc_output.Tcmp1 = Tcmp1;
-  g_foc_output.Tcmp2 = Tcmp2;
-  g_foc_output.Tcmp3 = Tcmp3;
+
+  g_foc_output.tcmp1 = tcmp1;
+  g_foc_output.tcmp2 = tcmp2;
+  g_foc_output.tcmp3 = tcmp3;
 }
 
 /***************************************
@@ -204,6 +212,7 @@ static void current_pid_calc(real32_T ref_temp, real32_T fdb_temp, real32_T* out
   real32_T temp;
   error = ref_temp - fdb_temp;
   temp = current_pid_temp->p_gain * error + current_pid_temp->i_sum;
+
   if (temp > current_pid_temp->max_output) 
   {
     *out_temp = current_pid_temp->max_output;
@@ -216,6 +225,7 @@ static void current_pid_calc(real32_T ref_temp, real32_T fdb_temp, real32_T* out
   {
     *out_temp = temp;
   }
+
   current_pid_temp->i_sum += ((*out_temp - temp) * current_pid_temp->b_gain + current_pid_temp->i_gain * error) *FOC_PERIOD;
 }
 
@@ -236,23 +246,23 @@ void foc_algorithm_step(void)
 
   rev_park_transf(g_voltage_dq, m_transf_cos_sin, &m_volt_alpha_beta);                     //反park变换  通过电流环得到的dq轴电压信息结合角度信息，去把直流信息转化为交流信息用于SVPWM的输入
 
-  m_foc_interface_sts.EKF_Interface[0] = m_volt_alpha_beta.v_alpha;   //扩展卡尔曼估计转子位置与速度需要的输入信息
-  m_foc_interface_sts.EKF_Interface[1] = m_volt_alpha_beta.v_beta;    //状态观测器输入
-  m_foc_interface_sts.EKF_Interface[2] = m_current_alpha_beta.i_alpha;
-  m_foc_interface_sts.EKF_Interface[3] = m_current_alpha_beta.i_beta;
-  m_foc_interface_sts.EKF_Interface[4] = g_foc_input.rs;
-  m_foc_interface_sts.EKF_Interface[5] = g_foc_input.ls;
-  m_foc_interface_sts.EKF_Interface[6] = g_foc_input.flux;
+  m_foc_interface_sts.ekf_interface[0] = m_volt_alpha_beta.v_alpha;   //扩展卡尔曼估计转子位置与速度需要的输入信息
+  m_foc_interface_sts.ekf_interface[1] = m_volt_alpha_beta.v_beta;    //状态观测器输入
+  m_foc_interface_sts.ekf_interface[2] = m_current_alpha_beta.i_alpha;
+  m_foc_interface_sts.ekf_interface[3] = m_current_alpha_beta.i_beta;
+  m_foc_interface_sts.ekf_interface[4] = g_foc_input.rs;
+  m_foc_interface_sts.ekf_interface[5] = g_foc_input.ls;
+  m_foc_interface_sts.ekf_interface[6] = g_foc_input.flux;
 
   smo_observer(m_volt_alpha_beta.v_alpha, m_volt_alpha_beta.v_beta, m_current_alpha_beta.i_alpha, m_current_alpha_beta.i_beta, &g_smo);
 
-  stm32_ekf_outputs_wrapper(&m_foc_interface_sts.EKF_Interface[0], &g_foc_output.EKF[0],  //扩展卡尔曼估计转子位置与速度的输出函数
-                            &m_foc_interface_sts.EKF_States[0]);
+  stm32_ekf_outputs_wrapper(&m_foc_interface_sts.ekf_interface[0], &g_foc_output.ekf[0],  //扩展卡尔曼估计转子位置与速度的输出函数
+                            &m_foc_interface_sts.ekf_sts[0]);
 
   svpwm_calc(m_volt_alpha_beta, g_foc_input.udc, g_foc_input.tpwm);       //SVPWM 计算模块
 
-  stm32_ekf_update_wrapper(&m_foc_interface_sts.EKF_Interface[0], &g_foc_output.EKF[0],   //扩展卡尔曼滤波算法的计算
-                           &m_foc_interface_sts.EKF_States[0]);  
+  stm32_ekf_update_wrapper(&m_foc_interface_sts.ekf_interface[0], &g_foc_output.ekf[0],   //扩展卡尔曼滤波算法的计算
+                           &m_foc_interface_sts.ekf_sts[0]);  
 
   pll_control(g_smo.v_alfa, g_smo.v_beta, &g_pll);
 }
@@ -280,45 +290,16 @@ void foc_algorithm_init(void)
 	
   smo_pll_param_init(&g_smo, &g_pll) ;  
 	
-  stm32_ekf_start_wrapper(&m_foc_interface_sts.EKF_States[0]);//扩展卡尔曼滤波算法 参数初始化
+  stm32_ekf_start_wrapper(&m_foc_interface_sts.ekf_sts[0]);//扩展卡尔曼滤波算法 参数初始化
 
   iir_lpf_param_init();
 
   //状态变量初始化
-  {
-    real_T initVector[4] = { 0, 0, 0, 0 };
-    
-    {
-      int_T i1;
-      real_T *dw_DSTATE = &m_foc_interface_sts.EKF_States[0];
-      for (i1=0; i1 < 4; i1++) {
-        dw_DSTATE[i1] = initVector[i1];
-      }
-    }
-  }
- 
-  {
-    real_T initVector[1] = { 0 };
-    
-    {
-      int_T i1;
-      for (i1=0; i1 < 1; i1++) {
-        m_foc_interface_sts.L_Ident_States = initVector[0];
-      }
-    }
-  }
-  
-
-  {
-    real_T initVector[1] = { 0 };
-    
-    {
-      int_T i1;
-      for (i1=0; i1 < 1; i1++) {
-        m_foc_interface_sts.R_flux_Ident_States = initVector[0];
-      }
-    }
-  }
-
+  m_foc_interface_sts.ekf_sts[0]        = 0.0f;
+  m_foc_interface_sts.ekf_sts[1]        = 0.0f;
+  m_foc_interface_sts.ekf_sts[2]        = 0.0f;
+  m_foc_interface_sts.ekf_sts[3]        = 0.0f;
+  m_foc_interface_sts.l_ident_sts       = 0.0f;
+  m_foc_interface_sts.r_flux_ident_sts  = 0.0f;
 }
 
