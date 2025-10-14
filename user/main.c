@@ -18,30 +18,39 @@
 
 #include "sensors_task.h"
 #include "motor_ctrl_task.h"
+#include "mb_slaver_task.h"
 
 #include "foc.h"
 //#include "ekf.h"
 
 static void param_init(void)
 {
-    g_app_param.ekf_theta = 0.0f;
-
-#if 0
-    g_iq_pi.kp       = 1.2f;
-    g_iq_pi.ki       = 0.3f;
-    g_iq_pi.out_max  = 4.0f;
-    g_iq_pi.iout_max = 10.0f;
-
-    g_id_pi.kp       = 0.6f;
-    g_id_pi.ki       = 0.1f;
-    g_id_pi.out_max  = 4.0f;
-    g_id_pi.iout_max = 10.0f;
-#endif
-
-    g_foc_input.rs    = MOTOR_PHASE_RES;
-    g_foc_input.ls    = MOTOR_PHASE_LS;
-    g_foc_input.flux  = MOTOR_FLUXLINK;
     g_foc_input.tpwm  = PWM_TIM_PULSE_TPWM;
+
+    g_mb_ctrl_param.speed_pid_p     = SPEED_PI_P;
+    g_mb_ctrl_param.speed_pid_i     = SPEED_PI_I;
+    g_mb_ctrl_param.speed_pid_kb    = SPEED_PI_KB;
+    g_mb_ctrl_param.speed_pid_limit = SPEED_PI_UP_LIMIT;
+
+    g_mb_ctrl_param.i_pid_p      = Q_PI_P;
+    g_mb_ctrl_param.i_pid_i      = Q_PI_I;
+    g_mb_ctrl_param.i_pid_kb     = Q_PI_KB;
+    g_mb_ctrl_param.i_pid_limit  = Q_PI_UP_LIMIT;
+
+    g_mb_ctrl_param.phase_rs     = MOTOR_PHASE_RES;   //相电阻
+    g_mb_ctrl_param.phase_ls     = MOTOR_PHASE_LS;    //相电感
+    g_mb_ctrl_param.flux_link    = MOTOR_FLUXLINK;    //磁链
+
+    g_mb_ctrl_param.speed_max    = MOTOR_SPEED_MAX_RPM;
+    g_mb_ctrl_param.speed_min    = MOTOR_SPEED_MIN_RPM;
+
+    g_mb_ctrl_param.i_err_th          = 10.0f;            //过流阈值
+    g_mb_ctrl_param.v_err_th          = VBUS_VLOT * 1.2f; //过压阈值
+
+    g_mb_ctrl_param.pll_p = 600.0f;
+    g_mb_ctrl_param.pll_i = 1500.0f;
+
+    g_mb_ctrl_param.motor_pole_pairs  = MOTOR_POLE_PAIRS;
 }
 
 /**
@@ -97,7 +106,8 @@ int main(void)
 
   //外设初始化
   bsp_gpio_init();  //普通型IO初始化
-  usart1_init();    //usart1 初始化, 用于 modbus 数据交互
+  usart1_init();    //usart1 初始化, 用于串口打印调试信息
+  usart3_init();    //usart3 初始化, 用于 modbus 数据交互
 
   timer8_init();    //用于生成PWM，
   adc_init();       //adc2 用于采样电流、电压、温度
@@ -171,6 +181,8 @@ int main(void)
       sensors_task();         //传感器任务
 
       motor_ctrl_task();      //电机控制任务
+
+      mb_slaver_task();       //modbus 从机任务
 
       mid_timer_loop_task();  //调度定时器的循环执行
   }

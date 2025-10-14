@@ -17,7 +17,16 @@
 #define USART1_RX_PIN               GPIO_PIN_10
 #define USART1_RX_AF                GPIO_AF7_USART1
 
+#define USART3_TX_PORT              GPIOB
+#define USART3_TX_PIN               GPIO_PIN_9
+#define USART3_TX_AF                GPIO_AF7_USART3
+
+#define USART3_RX_PORT              GPIOB
+#define USART3_RX_PIN               GPIO_PIN_11
+#define USART3_RX_AF                GPIO_AF7_USART3
+
 #define USART1_BAUDRATE             921600
+#define USART3_BAUDRATE             115200
 
 #define LED_STAT_PORT               GPIOC
 #define LED_STAT_PIN                GPIO_PIN_13

@@ -128,8 +128,8 @@ void smo_pll_param_init(smo_struct_t *smo, pll_struct_t *pll)
 	smo->v_beta			= 0.0f;
 
 	pll->err_sum 		= 0.0f;
-	pll->p 				= 600.0f;
-	pll->i 				= 15000.0f;
+	pll->p 				= g_mb_ctrl_param.pll_p;
+	pll->i 				= g_mb_ctrl_param.pll_i;
 	pll->theta 			= 0.0f;
 	pll->we  			= 0.0f;
 }

@@ -19,13 +19,10 @@
 #define PWM_PERIOD      8500        //(SYS_CLK_FREQ / PWM_FREQ)
 #define MAX_PWM_DUTY    ((PWM_PERIOD - 1) * 0.96)  //最大占空比
 
-#define PWM_TIM_PULSE_TPWM  (SYS_CLK_FREQ / (PWM_FREQ  / 2) )   //因为中心对齐，
+#define PWM_TIM_PULSE_TPWM  (SYS_CLK_FREQ / (PWM_FREQ  / 2) )   //因为中心对齐
 
 //电机参数
 #define MOTOR_POLE_PAIRS    2           //电机极对数
-#define MOTOR_I_MAX         19.80f      //电机最大电流，单位A
-#define MOTOR_RATED_I       6.6f        //电机额定电流，单位A
-#define MOTOR_RATED_V       24.0f       //电机额定电压，单位V
 
 //#define MOTOR_PHASE_RES     0.4f        //电机相电阻，单位欧姆
 //#define MOTOR_PHASE_LS      0.0008f     //电机相电感，单位亨利
@@ -38,17 +35,30 @@
 
 //程序设定参数
 #define MOTOR_SPEED_MAX_RPM     4000  //电机最高转速
-#define MOTOR_SPEED_MIN_RPM     10    //电机最小速度
-#define MOTOR_UQ_MAX            240   //电机q轴电压最大值，单位0.1V
+#define MOTOR_SPEED_MIN_RPM     100   //电机最小速度
 #define VBUS_VLOT               24.0f //母线电压，单位V
 
 //FOC参数
 #define FOC_PERIOD              0.0001f     //FOC运行的时间间隔
 #define SPEED_LOOP_CLOSE_RAD_S  20.0f       //速度环切入闭环的速度  单位: rad/s
 
-#define FIRST_ORDER_LPF(OUT, IN, FAC)  OUT = (1.0f - FAC) * OUT + FAC * IN;  /*一阶滤波 */
+/**
+ * 算法参数
+ */
+// 速度环默认参数
+#define SPEED_PI_P          0.003f
+#define SPEED_PI_I          5.0f
+#define SPEED_PI_KB         0.015f
+#define SPEED_PI_LOW_LIMIT  -6.0f
+#define SPEED_PI_UP_LIMIT   6.0f
 
-#define VOFA_PRINTF     printf      //配合vofa上位机使用
+// Q轴电流环默认参数
+#define Q_PI_P          3.199f
+#define Q_PI_I          2282.8f
+#define Q_PI_KB         15.0f
+#define Q_PI_LOW_LIMIT  -10.0f
+#define Q_PI_UP_LIMIT   10.0f
+
 
 // 电机状态
 typedef enum
@@ -82,11 +92,70 @@ typedef enum
     ACC_START,      //开始加速
 } motor_acc_dir_e;
 
-/***************************************** 电机状态结构体 ***********************************************/
+/*********** MODBUS **************/
+typedef enum
+{
+    REG_SW = 0x01,          //开关机
+    REG_DIR,                //电机方向
+
+    REG_TARGET_SPEED_L16,   //目标速度 低16位
+    REG_TARGET_SPEED_H16,   //目标速度 高16位
+
+    REG_SPEED_PID_P_L16,    //速度环P参数 低16位
+    REG_SPEED_PID_P_H16,    //速度环P参数 高16位
+    REG_SPEED_PID_I_L16,    //速度环I参数 低16位
+    REG_SPEED_PID_I_H16,    //速度环I参数 高16位
+    REG_SPEED_PID_KB_L16,   //速度环Kb参数 低16位
+    REG_SPEED_PID_KB_H16,   //速度环Kb参数 高16位
+    REG_SPEED_PID_LIMIT_L16,   //速度环幅值 低16位
+    REG_SPEED_PID_LIMIT_H16,   //速度环幅值 高16位
+
+    REG_I_PID_P_L16,        //电流环P参数 低16位
+    REG_I_PID_P_H16,        //电流环P参数 高16位
+    REG_I_PID_I_L16,        //电流环I参数 低16位
+    REG_I_PID_I_H16,        //电流环I参数 高16位
+    REG_I_PID_KB_L16,       //电流环Kb参数 低16位
+    REG_I_PID_KB_H16,       //电流环Kb参数 高16位
+    REG_I_PID_LIMIT_L16,    //电流环幅值 低16位
+    REG_I_PID_LIMIT_H16,    //电流环幅值 高16位
+
+    REG_PHASE_RS_L16,       //相电阻 低16位
+    REG_PHASE_RS_H16,       //相电阻 高16位
+    REG_PHASE_LS_L16,       //相电感 低16位
+    REG_PHASE_LS_H16,       //相电感 高16位
+    REG_FLUX_LINK_L16,      //磁链 低16位
+    REG_FLUX_LINK_H16,      //磁链 高16位
+
+    REG_SPEED_MAX_L16,     //最大速度 低16位
+    REG_SPEED_MAX_H16,     //最大速度 高16位
+    REG_SPEED_MIN_L16,     //最小速度 低16位
+    REG_SPEED_MIN_H16,     //最小速度 高16位
+
+    REG_VBUS_VOLT_L16,      //母线电压 低16位
+    REG_VBUS_VOLT_H16,      //母线电压 高16位
+    REG_I_ERR_TH_L16,       //过流阈值 低16位
+    REG_I_ERR_TH_H16,       //过流阈值 高16位
+    REG_V_ERR_TH_L16,       //过压阈值 低16位
+    REG_V_ERR_TH_H16,       //过压阈值 高16位
+
+    REG_PLL_P_L16,         //PLL p参数 低16位
+    REG_PLL_P_H16,         //PLL p参数 高16位
+    REG_PLL_I_L16,         //PLL i参数 低16位
+    REG_PLL_I_H16,         //PLL i参数 高16位
+
+    REG_POLE_PAIRS,         //电机极对数
+
+    REG_MB_ADDR,       //modbus地址
+    REG_MAX = 128,
+} mb_reg_e;
+
+/*********** 电机状态结构体 **************/
 
 // 全局应用参数
 typedef struct
 {
+    uint8_t     slave_addr;         // modbus 从机地址
+
     motor_sta_e motor_sta;          // 电机状态
     motor_sta_e pre_motor_sta;      // 电机前一状态
 
@@ -95,7 +164,6 @@ typedef struct
     motor_start_sta_e   motor_start_acc_sta;    //电机启动加速状态
 
     float       motor_speed_set;    // 电机设定速度，单位RPM
-    float       motor_speed_real;   // 电机实际速度，单位RPM
 
     float       target_uq;          // q轴电压 单位V
     float       target_iq;          // q轴电流 单位A
@@ -106,19 +174,45 @@ typedef struct
 
     float       target_step_angle;  // 步进角度，单位：弧度
 
-    float       ekf_theta;
-    float       ekf_angle_speed;
-    float       ekf_u_alpha;
-    float       ekf_u_beta;
-
-
     motor_acc_dir_e     iq_acc_dir;     // iq加速的方向,  0：iq达标  1：iq加速  2:iq减速 4:开始加速
     bool        is_speed_ring_start;    // 速度环开始标记
 } app_param_t;
 
 extern app_param_t g_app_param;
 
-extern pi_cal_t g_iq_pi;
-extern pi_cal_t g_id_pi;
+//调试参数
+typedef struct
+{
+    //速度环参数
+    float    speed_pid_p;        //
+    float    speed_pid_i;        //
+    float    speed_pid_kb;       //
+    float    speed_pid_limit;    //正负对称
+
+    //电流环参数
+    float    i_pid_p;            //
+    float    i_pid_i;            //
+    float    i_pid_kb;           //
+    float    i_pid_limit;        //正负对称
+
+    //电机参数
+    float    phase_rs;           // 相电阻
+    float    phase_ls;           // 相电感
+    float    flux_link;          // 磁链
+
+    float    speed_max;          // 最大速度 1 = 1 RPM
+    float    speed_min;          // 最小速度 1 = 1 RPM
+
+    float    i_err_th;           // 母线过流阈值
+    float    v_err_th;           // 母线过压阈值
+
+    float    pll_p;              // pll p参数
+    float    pll_i;              // pll i参数
+
+    uint16_t motor_pole_pairs;   // 电机极对数
+} mb_ctrl_param_t;
+
+
+extern mb_ctrl_param_t g_mb_ctrl_param;
 
 #endif

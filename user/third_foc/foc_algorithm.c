@@ -2,18 +2,6 @@
 
 #include "trace.h"
 
-#define D_PI_I          2282.8f
-#define D_PI_KB         15.0f
-#define D_PI_LOW_LIMIT  -10.0f
-#define D_PI_P          3.199f
-#define D_PI_UP_LIMIT   10.0f
-
-#define Q_PI_I          2282.8f
-#define Q_PI_KB         15.0f
-#define Q_PI_LOW_LIMIT  -10.0f
-#define Q_PI_P          3.199f
-#define Q_PI_UP_LIMIT   10.0f
-
 
 foc_input_t   g_foc_input;
 foc_output_t  g_foc_output;
@@ -29,7 +17,7 @@ extern void stm32_ekf_outputs_wrapper(const real32_T *u,
                                         const real_T *xD);
 extern void stm32_ekf_update_wrapper(const real32_T *u,
                                        real32_T *y,
-                                       real_T *xD);  
+                                       real_T *xD);
 
 static foc_interface_sts_t    m_foc_interface_sts;
 static current_abc_t          m_current_i_abc;
@@ -269,26 +257,25 @@ void foc_algorithm_step(void)
 
 void foc_algorithm_init(void)
 {
+#if 0
   //电流环PID 参数 初始化
-  {
-    m_current_d_pid.p_gain      = D_PI_P;
-    m_current_d_pid.i_gain      = D_PI_I;
-    m_current_d_pid.b_gain      = D_PI_KB;
-    m_current_d_pid.max_output  = D_PI_UP_LIMIT;
-    m_current_d_pid.min_output  = D_PI_LOW_LIMIT;
-    m_current_d_pid.i_sum       = 0.0f;//注意积分值需要清零
+  m_current_d_pid.p_gain      = D_PI_P;
+  m_current_d_pid.i_gain      = D_PI_I;
+  m_current_d_pid.b_gain      = D_PI_KB;
+  m_current_d_pid.max_output  = D_PI_UP_LIMIT;
+  m_current_d_pid.min_output  = D_PI_LOW_LIMIT;
+  m_current_d_pid.i_sum       = 0.0f;             //注意积分值需要清零
     
-    m_current_q_pid.p_gain      = Q_PI_P;
-    m_current_q_pid.i_gain      = Q_PI_I;
-    m_current_q_pid.b_gain      = Q_PI_KB;
-    m_current_q_pid.max_output  = Q_PI_UP_LIMIT;
-    m_current_q_pid.min_output  = Q_PI_LOW_LIMIT;
-    m_current_q_pid.i_sum       = 0.0f;
-  }
+  m_current_q_pid.p_gain      = Q_PI_P;
+  m_current_q_pid.i_gain      = Q_PI_I;
+  m_current_q_pid.b_gain      = Q_PI_KB;
+  m_current_q_pid.max_output  = Q_PI_UP_LIMIT;
+  m_current_q_pid.min_output  = Q_PI_LOW_LIMIT;
+  m_current_q_pid.i_sum       = 0.0f;
 
   speed_pid_param_init();  //速度环PID 参数 初始化
 	
-  smo_pll_param_init(&g_smo, &g_pll) ;  
+  smo_pll_param_init(&g_smo, &g_pll) ;
 	
   stm32_ekf_start_wrapper(&m_foc_interface_sts.ekf_sts[0]);//扩展卡尔曼滤波算法 参数初始化
 
@@ -301,5 +288,47 @@ void foc_algorithm_init(void)
   m_foc_interface_sts.ekf_sts[3]        = 0.0f;
   m_foc_interface_sts.l_ident_sts       = 0.0f;
   m_foc_interface_sts.r_flux_ident_sts  = 0.0f;
+
+  //
+  g_foc_input.rs    = MOTOR_PHASE_RES;
+  g_foc_input.ls    = MOTOR_PHASE_LS;
+  g_foc_input.flux  = MOTOR_FLUXLINK;
+#endif
+
+  //电流环PID 参数 初始化
+  m_current_d_pid.p_gain      = g_mb_ctrl_param.i_pid_p;
+  m_current_d_pid.i_gain      = g_mb_ctrl_param.i_pid_i;
+  m_current_d_pid.b_gain      = g_mb_ctrl_param.i_pid_kb;
+  m_current_d_pid.max_output  = g_mb_ctrl_param.i_pid_limit;
+  m_current_d_pid.min_output  = -g_mb_ctrl_param.i_pid_limit;
+  m_current_d_pid.i_sum       = 0.0f;             //注意积分值需要清零
+    
+  m_current_q_pid.p_gain      = g_mb_ctrl_param.i_pid_p;
+  m_current_q_pid.i_gain      = g_mb_ctrl_param.i_pid_i;
+  m_current_q_pid.b_gain      = g_mb_ctrl_param.i_pid_kb;
+  m_current_q_pid.max_output  = g_mb_ctrl_param.i_pid_limit;
+  m_current_q_pid.min_output  = -g_mb_ctrl_param.i_pid_limit;
+  m_current_q_pid.i_sum       = 0.0f;
+
+  speed_pid_param_init();  //速度环PID 参数 初始化
+	
+  smo_pll_param_init(&g_smo, &g_pll) ;
+
+  stm32_ekf_start_wrapper(&m_foc_interface_sts.ekf_sts[0]);//扩展卡尔曼滤波算法 参数初始化
+
+  iir_lpf_param_init();
+
+  //状态变量初始化
+  m_foc_interface_sts.ekf_sts[0]        = 0.0f;
+  m_foc_interface_sts.ekf_sts[1]        = 0.0f;
+  m_foc_interface_sts.ekf_sts[2]        = 0.0f;
+  m_foc_interface_sts.ekf_sts[3]        = 0.0f;
+  m_foc_interface_sts.l_ident_sts       = 0.0f;
+  m_foc_interface_sts.r_flux_ident_sts  = 0.0f;
+
+  //
+  g_foc_input.rs    = g_mb_ctrl_param.phase_rs;
+  g_foc_input.ls    = g_mb_ctrl_param.phase_ls;
+  g_foc_input.flux  = g_mb_ctrl_param.flux_link;
 }
 

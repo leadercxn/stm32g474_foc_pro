@@ -6,13 +6,6 @@
 
 #define SPEED_PID_PERIOD    0.001F
 
-#define SPEED_PI_I          5.0f
-#define SPEED_PI_KB         0.015f
-#define SPEED_PI_LOW_LIMIT  -6.0f
-#define SPEED_PI_P          0.003f
-#define SPEED_PI_UP_LIMIT   6.0f
-
-                   
 real32_T g_speed_ref;        //速度参考, 目标速度， rad/s
 real32_T g_speed_fdk;        //速度反馈，实际速度,  rad/s
 real32_T g_speed_pid_out;    //速度PID输出，也就是Q轴电流环的参考             
@@ -96,12 +89,12 @@ void speed_pid_cal(real32_T ref_temp, real32_T fdb_temp, real32_T* out_temp, spe
 
 void speed_pid_param_init(void)
 {
-  g_speed_pid.p_gain = SPEED_PI_P;
-  g_speed_pid.i_gain = SPEED_PI_I;
-  g_speed_pid.b_gain = SPEED_PI_KB;
-  g_speed_pid.max_output = SPEED_PI_UP_LIMIT;
-  g_speed_pid.min_output = SPEED_PI_LOW_LIMIT;
-  g_speed_pid.i_sum  = 0.0f;
+  g_speed_pid.p_gain     = g_mb_ctrl_param.speed_pid_p;
+  g_speed_pid.i_gain     = g_mb_ctrl_param.speed_pid_i;
+  g_speed_pid.b_gain     = g_mb_ctrl_param.speed_pid_kb;
+  g_speed_pid.max_output = g_mb_ctrl_param.speed_pid_limit;
+  g_speed_pid.min_output = -g_mb_ctrl_param.speed_pid_limit;
+  g_speed_pid.i_sum      = 0.0f;
 
   g_speed_pid.speed_step_add    = 0.5f;
 	g_speed_pid.speed_ref_last    = 0.0f;

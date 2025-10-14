@@ -44,88 +44,6 @@ typedef struct
 
 float   vofa_param[12] = {0.0f};
 
-/**
- * 电机算法运行过程
- */
-static void motor_algorithm_handle(void)
-{
-    float cos_theta;   //计算估算角度θ 的正弦，余弦值
-    float sin_theta;
-
-    /**
-     * 强拉之后，开始进入 FOC 控制
-     */
-        
-    if((g_app_param.motor_sta == MOTOR_STA_STARTING) || (g_app_param.motor_sta == MOTOR_STA_RUNNING))
-    {
-
-#if 0
-        iq_id_cal(&g_current_foc, adc_sample_physical_value_get(ADC_CH_U_I), adc_sample_physical_value_get(ADC_CH_V_I), \
-                    adc_sample_physical_value_get(ADC_CH_W_I), g_app_param.ekf_theta);
-
-        cos_theta = cosf(g_app_param.ekf_theta);
-        sin_theta = sinf(g_app_param.ekf_theta);
-#endif
-
-//        g_app_param.ekf_u_alpha = cos_theta * g_current_foc.ud - sin_theta * g_current_foc.uq;
-//        g_app_param.ekf_u_beta  = sin_theta * g_current_foc.ud + cos_theta * g_current_foc.uq;
-
-//      g_app_param.ekf_u_alpha = - sin_theta * g_current_foc.uq;
-//      g_app_param.ekf_u_beta  = + cos_theta * g_current_foc.uq;
-
-        //经pid计算后得到的 ualpha,ubeta
-//      g_app_param.ekf_u_alpha = cos_theta * g_id_pi.out - sin_theta * g_iq_pi.out;
-//      g_app_param.ekf_u_beta  = sin_theta * g_id_pi.out + cos_theta * g_iq_pi.out;
-
-#if 0
-        if(g_app_param.motor_sta == MOTOR_STA_RUNNING)
-        {
-            pi_cal(&g_iq_pi, g_app_param.target_iq - g_current_foc.i_q);
-            pi_cal(&g_id_pi, 0 - g_current_foc.i_d);
-
-            g_app_param.ekf_u_alpha = cos_theta * g_id_pi.out - sin_theta * g_iq_pi.out;
-            g_app_param.ekf_u_beta  = sin_theta * g_id_pi.out + cos_theta * g_iq_pi.out;
-        }
-        else
-        {
-            g_app_param.ekf_u_alpha = cos_theta * g_current_foc.ud - sin_theta * g_current_foc.uq;
-            g_app_param.ekf_u_beta  = sin_theta * g_current_foc.ud + cos_theta * g_current_foc.uq;
-        }
-#endif
-
-#if 0
-        if(g_app_param.motor_sta == MOTOR_STA_RUNNING)
-        {
-            ekf_torque_handler();                           // 力矩环
-        }
-#endif
-
-#if 0
-        g_ekf_data.ekf_input[0] = g_app_param.ekf_u_alpha;
-        g_ekf_data.ekf_input[1] = g_app_param.ekf_u_beta;
-        g_ekf_data.ekf_input[2] = g_current_foc.i_alpha;
-        g_ekf_data.ekf_input[3] = g_current_foc.i_beta;
-        g_ekf_data.ekf_input[4] = MOTOR_PHASE_RES;                //电阻
-        g_ekf_data.ekf_input[5] = MOTOR_PHASE_LS;                 //电感
-        g_ekf_data.ekf_input[6] = MOTOR_FLUXLINK;                 //磁链
-
-        apt_ekf_update(&g_ekf_data.ekf_input[0], &g_ekf_data.ekf_states[0]);
-
-        g_app_param.ekf_theta       = g_ekf_data.ekf_states[3];  //取出估计角度
-        g_app_param.ekf_angle_speed = g_ekf_data.ekf_states[2];
-#endif
-
-
-#if 0
-        if(g_app_param.motor_sta == MOTOR_STA_RUNNING)
-        {
-            g_app_param.curr_uq = g_iq_pi.out;
-            torque_set(g_app_param.curr_uq, g_id_pi.out, g_app_param.ekf_theta);
-        }
-#endif
-        }
-}
-
 uint16_t tim8_irq_cnt = 0;
 /**
  * timer8 CCH4 中断回调函数 10KHz的执行频率
@@ -136,14 +54,6 @@ static void timer8_irq_cb_handler(void)
 
     gpio_output_set(TEST1_IO_PORT, TEST1_IO_PIN, 1);
     adc_inj_start();        //每一次中断触发一次电流采集 10K 的执行频率
-
-/**
- * 原来cxn的启动 和 EKF 观测
- */
-#if 0
-        motor_acc_start_handle();
-        motor_algorithm_handle();
-#endif
 }
 
 /**

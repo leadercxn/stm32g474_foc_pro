@@ -34,5 +34,6 @@ extern smo_struct_t g_smo;
 void smo_observer(float u_alfa, float u_beta, float i_alfa, float i_beta, smo_struct_t *smo);
 void pll_control(float e_alfa, float e_beta, pll_struct_t *pll);
 void smo_pll_param_init(smo_struct_t *smo, pll_struct_t *pll);
+
 #endif
 

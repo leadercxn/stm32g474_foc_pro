@@ -78,6 +78,7 @@ C_INCLUDES =  		\
 -I $(SDK_DIR)/components/util				\
 -I $(SDK_DIR)/components/trace				\
 -I $(SDK_DIR)/components/pid				\
+-I $(SDK_DIR)/external/modbus/inc			\
 -I peripherals								\
 -I bsp										\
 -I peripherals								\
@@ -116,6 +117,9 @@ $(SDK_DIR)/components/app_scheduler/app_scheduler.c				\
 $(SDK_DIR)/components/app_fifo/app_fifo.c						\
 $(SDK_DIR)/components/trace/trace.c								\
 $(SDK_DIR)/components/pid/pid.c									\
+$(SDK_DIR)/external/modbus/src/mbrtu.c							\
+$(SDK_DIR)/external/modbus/src/mbrtuslave.c						\
+$(SDK_DIR)/external/modbus/src/mbpdu.c							\
 user/st_src/system_stm32g4xx.c 	\
 user/st_src/sysmem.c 			\
 user/st_src/syscalls.c  		\
@@ -130,6 +134,7 @@ peripherals/adc.c				\
 user/parameters.c				\
 user/tasks/sensors_task.c		\
 user/tasks/motor_ctrl_task.c	\
+user/tasks/mb_slaver_task.c	\
 user/src/foc.c					\
 user/src/clark.c				\
 user/src/park.c					\
@@ -140,6 +145,7 @@ user/third_foc/smo_pll.c 		\
 user/third_foc/speed_pid.c 		\
 user/third_foc/stm32_ekf_wrapper.c 	\
 user/third_foc/if_start.c 		\
+user/sdk_r/mbcommon_r.c			\
 
 # ASM sources
 ASM_SOURCES =  \
