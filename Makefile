@@ -55,8 +55,9 @@ C_DEFS =  			\
 -DUSE_HAL_DRIVER 	\
 -DSTM32G474xx		\
 -DSIMULINK_USE_ARM_MATH		\
-#-DTRACE_LEVEL=7		\
+#-DTRACE_LEVEL=7	\
 #-DTRACE_ENABLE		\
+
 # 假如使用VOFA float ，就要屏蔽 TRACE_ENABLE
 
 # AS includes
@@ -134,7 +135,8 @@ peripherals/adc.c				\
 user/parameters.c				\
 user/tasks/sensors_task.c		\
 user/tasks/motor_ctrl_task.c	\
-user/tasks/mb_slaver_task.c	\
+user/tasks/mb_slaver_task.c		\
+user/tasks/monitor_task.c		\
 user/src/foc.c					\
 user/src/clark.c				\
 user/src/park.c					\

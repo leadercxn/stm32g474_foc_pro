@@ -13,7 +13,7 @@
 #include "sensors_task.h"
 #include "mb_slaver_task.h"
 
-#undef  TRACE_ENABLE
+//#undef  TRACE_ENABLE
 #include "trace.h"
 
 static uint16_t mb_reg[REG_MAX];        //HMI通信寄存器
@@ -165,6 +165,7 @@ void SetMultipleRegister(uint16_t startAddress, uint16_t quantity, uint16_t *reg
 static void sys_update_2_reg(void)
 {
     float    temp_f = 0.0f;
+    uint16_t temp_u16 = 0;
 
     if(g_app_param.motor_sta == MOTOR_STA_STOP)
     {
@@ -178,6 +179,8 @@ static void sys_update_2_reg(void)
     mb_reg[REG_DIR]             = g_app_param.motor_dir;
 
     memcpy((uint8_t *)&mb_reg[REG_TARGET_SPEED_L16], (uint8_t *)&g_app_param.motor_speed_set, 4);
+
+//电机调试参数
 
     //速度环参数
     memcpy((uint8_t *)&mb_reg[REG_SPEED_PID_P_L16],     (uint8_t *)&g_mb_ctrl_param.speed_pid_p, 4);
@@ -201,9 +204,6 @@ static void sys_update_2_reg(void)
     memcpy((uint8_t *)&mb_reg[REG_SPEED_MIN_L16],    (uint8_t *)&g_mb_ctrl_param.speed_min, 4);
 
     //过流，过压阈值
-    temp_f = adc_sample_physical_value_get(ADC_CH_VBUS);
-    memcpy((uint8_t *)&mb_reg[REG_VBUS_VOLT_L16],    (uint8_t *)&temp_f, 4);
-
     memcpy((uint8_t *)&mb_reg[REG_I_ERR_TH_L16],     (uint8_t *)&g_mb_ctrl_param.i_err_th, 4);
     memcpy((uint8_t *)&mb_reg[REG_V_ERR_TH_L16],     (uint8_t *)&g_mb_ctrl_param.v_err_th, 4);
 
@@ -212,8 +212,49 @@ static void sys_update_2_reg(void)
     memcpy((uint8_t *)&mb_reg[REG_PLL_I_L16],    (uint8_t *)&g_mb_ctrl_param.pll_i, 4);
 
     mb_reg[REG_POLE_PAIRS] = g_mb_ctrl_param.motor_pole_pairs;
-
     mb_reg[REG_MB_ADDR]    = g_app_param.slave_addr;
+
+//运行参数
+    temp_f = adc_sample_physical_value_get(ADC_CH_VBUS);    // 母线电压 0.1V
+    temp_u16 = (uint16_t) (temp_f * 10);
+    mb_reg[REG_VBUS_VOLT] = temp_u16;
+
+    temp_f = adc_sample_physical_value_get(ADC_CH_TEMP);    // 板载温度 0.1℃
+    temp_u16 = (uint16_t) (temp_f * 10);
+    mb_reg[REG_BSP_TEMP] = temp_u16;
+
+    temp_f = adc_sample_physical_value_get(ADC_CH_U_VOLT);  // U相电压 0.1V
+    temp_u16 = (uint16_t) (temp_f * 10);
+    mb_reg[REG_U_VOLT] = temp_u16;
+
+    temp_f = adc_sample_physical_value_get(ADC_CH_V_VOLT);  // V相电压 0.1V
+    temp_u16 = (uint16_t) (temp_f * 10);
+    mb_reg[REG_V_VOLT] = temp_u16;
+
+    temp_f = adc_sample_physical_value_get(ADC_CH_W_VOLT);  // W相电压 0.1V
+    temp_u16 = (uint16_t) (temp_f * 10);
+    mb_reg[REG_W_VOLT] = temp_u16;
+
+    temp_f = adc_sample_physical_value_get(ADC_CH_U_I);     // U相电流 mA
+    temp_u16 = (uint16_t) (temp_f * 1000);
+    mb_reg[REG_U_CURR] = temp_u16;
+
+    temp_f = adc_sample_physical_value_get(ADC_CH_V_I);    // V相电流 mA
+    temp_u16 = (uint16_t) (temp_f * 1000);
+    mb_reg[REG_V_CURR] = temp_u16;
+
+    temp_f = adc_sample_physical_value_get(ADC_CH_W_I);    // W相电流 mA
+    temp_u16 = (uint16_t) (temp_f * 1000);
+    mb_reg[REG_W_CURR] = temp_u16;
+
+    temp_u16 = (uint16_t) (g_foc_output.ekf[2] / DOUBLE_PI * 60);  // 当前速度 r/min
+    mb_reg[REG_CURR_SPEED] = temp_u16;
+
+    temp_u16 = (uint16_t) (g_foc_output.ekf[3] * 100);
+    mb_reg[REG_CURR_THETA] = temp_u16;
+
+    mb_reg[REG_EVT_CODE0] = g_app_param.evt_code & 0x0000FFFF;
+    mb_reg[REG_EVT_CODE1] = (g_app_param.evt_code >> 16) & 0x0000FFFF;
 
 }
 
@@ -243,8 +284,6 @@ static void reg_update_2_sys(void)
         {
             g_app_param.motor_dir = mb_reg[REG_DIR];
         }
-
-
 
         // modbus地址
         if( (mb_reg[REG_MB_ADDR] >= 1) && (mb_reg[REG_MB_ADDR] <= 250) )
@@ -288,12 +327,17 @@ int mb_slaver_task(void)
         tx_len = ParsingMasterAccessCommand(m_rx_data, tx_data, m_rx_len, g_app_param.slave_addr);
         if(tx_len != 0XFFFF)
         {
-            trace_debug("A1B1 tx len %d data: ", tx_len);
-            trace_dump(tx_data, tx_len);
 
+            trace_debug("A1B1 tx len %d data: ", tx_len);
+#if 0
+            trace_dump(tx_data, tx_len);
+#endif
             usart3_tx(tx_data, tx_len);
 
-            reg_update_2_sys();
+            if( (m_rx_data[1] == WriteSingleCoil) || (m_rx_data[1] == WriteSingleRegister) || (m_rx_data[1] == WriteMultipleCoil) || (m_rx_data[1] == WriteMultipleRegister) )
+            {
+                reg_update_2_sys();
+            }
         }
     }
 

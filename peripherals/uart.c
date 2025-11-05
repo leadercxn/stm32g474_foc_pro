@@ -27,7 +27,7 @@ static bool         m_is_rx1_done = false;          // 接收完成标志
 static UART_HandleTypeDef m_huart3_handle;
 static uint8_t      m_rx3_data;                     // HAL库使用的串口接收缓冲
 static app_fifo_t   m_usart3_rx_fifo;               // rx 的信息fifo
-static uint8_t      m_usart3_rx_msg[128];           // fifo 长度
+static uint8_t      m_usart3_rx_msg[256];           // fifo 长度
 static bool         m_is_rx3_done = false;          // 接收完成标志
 
 TIMER_DEF(m_rx1_timer);
@@ -304,7 +304,7 @@ int usart3_tx(uint8_t *p_tx_data, uint16_t len)
         return -HAL_ERROR;
     }
 
-    return HAL_UART_Transmit(&m_huart3_handle, p_tx_data, len, 10);    //超时先写个demo
+    return HAL_UART_Transmit(&m_huart3_handle, p_tx_data, len, 20);    //超时先写个demo
     //return HAL_UART_Transmit_DMA(&m_huart1_handle, p_tx_data, len);
 }
 

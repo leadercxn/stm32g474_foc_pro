@@ -53,11 +53,11 @@
 #define SPEED_PI_UP_LIMIT   6.0f
 
 // Q轴电流环默认参数
-#define Q_PI_P          3.199f
-#define Q_PI_I          2282.8f
-#define Q_PI_KB         15.0f
-#define Q_PI_LOW_LIMIT  -10.0f
-#define Q_PI_UP_LIMIT   10.0f
+#define Q_PI_P              3.199f
+#define Q_PI_I              2282.8f
+#define Q_PI_KB             15.0f
+#define Q_PI_LOW_LIMIT      -10.0f
+#define Q_PI_UP_LIMIT       10.0f
 
 
 // 电机状态
@@ -101,6 +101,7 @@ typedef enum
     REG_TARGET_SPEED_L16,   //目标速度 低16位
     REG_TARGET_SPEED_H16,   //目标速度 高16位
 
+//电机调试参数
     REG_SPEED_PID_P_L16,    //速度环P参数 低16位
     REG_SPEED_PID_P_H16,    //速度环P参数 高16位
     REG_SPEED_PID_I_L16,    //速度环I参数 低16位
@@ -126,28 +127,76 @@ typedef enum
     REG_FLUX_LINK_L16,      //磁链 低16位
     REG_FLUX_LINK_H16,      //磁链 高16位
 
-    REG_SPEED_MAX_L16,     //最大速度 低16位
-    REG_SPEED_MAX_H16,     //最大速度 高16位
-    REG_SPEED_MIN_L16,     //最小速度 低16位
-    REG_SPEED_MIN_H16,     //最小速度 高16位
+    REG_SPEED_MAX_L16,      //最大速度 低16位
+    REG_SPEED_MAX_H16,      //最大速度 高16位
+    REG_SPEED_MIN_L16,      //最小速度 低16位
+    REG_SPEED_MIN_H16,      //最小速度 高16位
 
-    REG_VBUS_VOLT_L16,      //母线电压 低16位
-    REG_VBUS_VOLT_H16,      //母线电压 高16位
     REG_I_ERR_TH_L16,       //过流阈值 低16位
     REG_I_ERR_TH_H16,       //过流阈值 高16位
     REG_V_ERR_TH_L16,       //过压阈值 低16位
     REG_V_ERR_TH_H16,       //过压阈值 高16位
 
-    REG_PLL_P_L16,         //PLL p参数 低16位
-    REG_PLL_P_H16,         //PLL p参数 高16位
-    REG_PLL_I_L16,         //PLL i参数 低16位
-    REG_PLL_I_H16,         //PLL i参数 高16位
+    REG_PLL_P_L16,          //PLL p参数 低16位
+    REG_PLL_P_H16,          //PLL p参数 高16位
+    REG_PLL_I_L16,          //PLL i参数 低16位
+    REG_PLL_I_H16,          //PLL i参数 高16位
 
     REG_POLE_PAIRS,         //电机极对数
+    REG_MB_ADDR,            //modbus地址
 
-    REG_MB_ADDR,       //modbus地址
+// 运行状态参数
+    REG_VBUS_VOLT,     //母线电压
+    REG_BSP_TEMP,      //板载温度
+    REG_U_VOLT,        //U相电压
+    REG_V_VOLT,        //V相电压
+    REG_W_VOLT,        //W相电压
+    REG_U_CURR,        //U相电流
+    REG_V_CURR,        //V相电流
+    REG_W_CURR,        //W相电流
+
+    REG_CURR_SPEED,    //当前速度
+    REG_CURR_THETA,    //当前角度
+
+    REG_EVT_CODE0 = 124,    //事件码 Bit0 ~ bit15
+    REG_EVT_CODE1,          //事件码 Bit16 ~ bit31
+    REG_EVT_CODE2,          //事件码 Bit32 ~ bit47
+    REG_EVT_CODE3,          //事件码 Bit48 ~ bit63
+
     REG_MAX = 128,
 } mb_reg_e;
+
+// 显示故障bit排位 L -> H
+typedef enum {
+    EVT_I_SHORT,            //短路
+    EVT_OVER_CUR,           //过流
+    EVT_MB_OVER_VOLT,       //直流母线过压
+    EVT_MB_UNDER_VOLT,      //直流母线欠压
+
+    EVT_TEMP_SENS_ERR,      //温度传感器故障
+    EVT_RAD_OVER_TEMP,      //散热片过温
+    EVT_ROTOR_ABNORMAL,     //转子异常(堵转)
+    EVT_INPUT_PHASE_LOSS,   //输入 缺相
+
+    EVT_OUTPUT_PHASE_LOSS,  //输出 缺相
+    EVT_OVER_CUR_REDU_FREQ, //过流降频
+    EVT_LIMIT_FREQ,         //限频
+    EVT_IPM_ERR,            //IPM 模块故障 (IGBT模块)
+
+    EVT_STARTUP_FAIL,       //启动失败
+    EVT_BOX_OVER_TEMP,      //机箱过温
+    EVT_IGBT_OVER_TEMP,     //IGBT过温
+    EVT_OUT_OVER_VOLT,      //输出过压
+
+    EVT_OUT_UNDER_VOLT,     //输出欠压
+    EVT_OTHER_FAULT,        //其他故障
+    EVT_U_UNDER_VOLT,       //U相欠压
+    EVT_V_UNDER_VOLT,       //V相欠压
+
+    EVT_W_UNDER_VOLT,       //W相欠压
+} sys_evt_e;
+
+
 
 /*********** 电机状态结构体 **************/
 
@@ -176,6 +225,8 @@ typedef struct
 
     motor_acc_dir_e     iq_acc_dir;     // iq加速的方向,  0：iq达标  1：iq加速  2:iq减速 4:开始加速
     bool        is_speed_ring_start;    // 速度环开始标记
+
+    uint64_t    evt_code;               // 事件代码
 } app_param_t;
 
 extern app_param_t g_app_param;

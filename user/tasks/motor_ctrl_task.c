@@ -64,6 +64,8 @@ void motor_run(void)
     // 电机状态机
     switch(g_app_param.motor_sta)
     {
+        case MOTOR_STA_STOP:
+            break;
         case MOTOR_STA_STOPPING:
             break;
 
@@ -162,6 +164,8 @@ void motor_vf_run(void)
     // 电机状态机
     switch(g_app_param.motor_sta)
     {
+        case MOTOR_STA_STOP:
+            break;
         case MOTOR_STA_STOPPING:
             break;
 
@@ -211,10 +215,10 @@ void motor_vf_run(void)
 
 //速度稳定后切入到速度环
 #if 1
-                    if( (g_foc_output.ekf[2] > 60.0f) || (g_foc_output.ekf[2] < -60.0f) )    //检测速度是否达标速度闭环
+                    if( (g_foc_output.ekf[2] > 40.0f) || (g_foc_output.ekf[2] < -40.0f) )    //检测速度是否达标速度闭环
                     {
                         vf_start_cnt++;
-                        if(vf_start_cnt > 40000)                       //速度环达标超4S后，转到速度闭环
+                        if(vf_start_cnt > 10000)                       //速度环达标超 1S 后，转到速度闭环
                         {
                             vf_start_cnt = 0;
                             g_app_param.is_speed_ring_start = true;
@@ -272,6 +276,8 @@ void motor_if_run(void)
     // 电机状态机
     switch(g_app_param.motor_sta)
     {
+        case MOTOR_STA_STOP:
+            break;
         case MOTOR_STA_STOPPING:
             break;
 
@@ -582,6 +588,8 @@ int motor_ctrl_task(void)
                 g_app_param.curr_uq = 0.0f;
                 g_app_param.curr_theta = 0.0f;
                 g_app_param.iq_acc_dir = ACC_DONE;
+
+                foc_algorithm_init();                               //FOC 算法参数初始化
             }
 
             TIMER_STOP(m_speed_pid_timer);
@@ -597,9 +605,9 @@ int motor_ctrl_task(void)
         case MOTOR_STA_STARTING:
             if(g_app_param.motor_sta != g_app_param.pre_motor_sta)  //每一次启动都要foc参数初始化
             {
-                if_start_param_init();          //IF启动参数初始化
+                if_start_param_init();                              //IF启动参数初始化
 
-                foc_algorithm_init();     //FOC 算法参数初始化
+                foc_algorithm_init();                               //FOC 算法参数初始化
 
                 phase_pwm_start();
             }

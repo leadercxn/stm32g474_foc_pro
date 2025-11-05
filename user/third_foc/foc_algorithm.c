@@ -326,6 +326,8 @@ void foc_algorithm_init(void)
   m_foc_interface_sts.l_ident_sts       = 0.0f;
   m_foc_interface_sts.r_flux_ident_sts  = 0.0f;
 
+  stm32_ekf_outputs_wrapper(NULL, &g_foc_output.ekf[0], &m_foc_interface_sts.ekf_sts[0]);
+
   //
   g_foc_input.rs    = g_mb_ctrl_param.phase_rs;
   g_foc_input.ls    = g_mb_ctrl_param.phase_ls;

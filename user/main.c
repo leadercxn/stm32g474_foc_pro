@@ -19,6 +19,7 @@
 #include "sensors_task.h"
 #include "motor_ctrl_task.h"
 #include "mb_slaver_task.h"
+#include "monitor_task.h"
 
 #include "foc.h"
 //#include "ekf.h"
@@ -176,6 +177,8 @@ int main(void)
 
         trace_debug("angle %f\r\n", angle);
 #endif
+
+        trace_debug("evt code %#llx\r\n", g_app_param.evt_code);
       }
 
       sensors_task();         //传感器任务
@@ -183,6 +186,8 @@ int main(void)
       motor_ctrl_task();      //电机控制任务
 
       mb_slaver_task();       //modbus 从机任务
+
+      monitor_task();         //监控任务
 
       mid_timer_loop_task();  //调度定时器的循环执行
   }
