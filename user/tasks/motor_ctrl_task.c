@@ -218,7 +218,7 @@ void motor_vf_run(void)
                     if( (g_foc_output.ekf[2] > 40.0f) || (g_foc_output.ekf[2] < -40.0f) )    //检测速度是否达标速度闭环
                     {
                         vf_start_cnt++;
-                        if(vf_start_cnt > 10000)                       //速度环达标超 1S 后，转到速度闭环
+                        if(vf_start_cnt > 100)                       //速度环达标超 0.1 * 100 ms 后，转到速度闭环
                         {
                             vf_start_cnt = 0;
                             g_app_param.is_speed_ring_start = true;
