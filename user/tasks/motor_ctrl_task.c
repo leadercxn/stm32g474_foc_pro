@@ -68,15 +68,8 @@ void motor_run(void)
     {
         case MOTOR_STA_STOP:
             break;
-        case MOTOR_STA_STOPPING:
-            break;
-
-        case MOTOR_STA_RUNNING:
-            break;
 
         case MOTOR_STA_STARTING:
-            if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC)              //加速未完成
-            {
                 if(g_app_param.iq_acc_dir == ACC_START)                             //Iq发生改变，开始调整Iq
                 {
                     if(g_app_param.curr_iq < g_app_param.target_iq)
@@ -141,15 +134,6 @@ void motor_run(void)
                 TIM8->CCR1 = (uint16_t)(g_foc_output.tcmp1);     
 	            TIM8->CCR2 = (uint16_t)(g_foc_output.tcmp2);
 	            TIM8->CCR3 = (uint16_t)(g_foc_output.tcmp3);
-            }
-            else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC_END)     //加速已完成，切换到恒速
-            {
-
-            }
-            else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_CONST)       //恒速运行
-            {
-                
-            }
             break;
 
         case MOTOR_STA_ERROR:
@@ -168,15 +152,8 @@ void motor_vf_run(void)
     {
         case MOTOR_STA_STOP:
             break;
-        case MOTOR_STA_STOPPING:
-            break;
-
-        case MOTOR_STA_RUNNING:
-            break;
 
         case MOTOR_STA_STARTING:
-            if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC)              //加速未完成
-            {
                 if(g_app_param.iq_acc_dir == ACC_START)                             //Iq发生改变，开始调整Iq
                 {
                     if(g_app_param.vf_curr_uq < g_app_param.vf_target_uq)
@@ -215,8 +192,7 @@ void motor_vf_run(void)
                     g_foc_input.theta  = g_app_param.vf_curr_theta;
                     g_foc_input.iq_ref = g_app_param.vf_curr_uq;
 
-//速度稳定后切入到速度环
-#if 1
+                    //速度稳定后切入到速度环
                     if( (g_foc_output.ekf[2] > 40.0f) || (g_foc_output.ekf[2] < -40.0f) )    //检测速度是否达标速度闭环
                     {
                         vf_start_cnt++;
@@ -232,15 +208,13 @@ void motor_vf_run(void)
                     {
                         vf_start_cnt = 0;
                     }
-#endif
-
                 }
                 else
                 {
 // 使用卡尔曼
 #if 1
-                    g_app_param.curr_speed_rad_s         = g_foc_output.ekf[2];          //使用卡尔曼估算的角速度
-                    g_foc_input.theta   = g_foc_output.ekf[3];          //使用卡尔曼估算角度
+                    g_app_param.curr_speed_rad_s = g_foc_output.ekf[2];          //使用卡尔曼估算的角速度
+                    g_foc_input.theta            = g_foc_output.ekf[3];          //使用卡尔曼估算角度
 #endif
 
 // 使用PLL
@@ -263,15 +237,6 @@ void motor_vf_run(void)
                 TIM8->CCR1 = (uint16_t)(g_foc_output.tcmp1);     
 	            TIM8->CCR2 = (uint16_t)(g_foc_output.tcmp2);
 	            TIM8->CCR3 = (uint16_t)(g_foc_output.tcmp3);
-            }
-            else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC_END)     //加速已完成，切换到恒速
-            {
-
-            }
-            else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_CONST)       //恒速运行
-            {
-                
-            }
             break;
 
         case MOTOR_STA_ERROR:
@@ -289,15 +254,8 @@ void motor_if_run(void)
     {
         case MOTOR_STA_STOP:
             break;
-        case MOTOR_STA_STOPPING:
-            break;
-
-        case MOTOR_STA_RUNNING:
-            break;
 
         case MOTOR_STA_STARTING:
-            if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC)              //加速未完成
-            {
                 if(g_app_param.iq_acc_dir == ACC_START)                             //Iq发生改变，开始调整Iq
                 {
                     if(g_app_param.curr_iq < g_app_param.target_iq)
@@ -362,15 +320,6 @@ void motor_if_run(void)
                 TIM8->CCR1 = (uint16_t)(g_foc_output.tcmp1);     
 	            TIM8->CCR2 = (uint16_t)(g_foc_output.tcmp2);
 	            TIM8->CCR3 = (uint16_t)(g_foc_output.tcmp3);
-            }
-            else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_ACC_END)     //加速已完成，切换到恒速
-            {
-
-            }
-            else if(g_app_param.motor_start_acc_sta == MOTOR_START_STA_CONST)       //恒速运行
-            {
-                
-            }
             break;
 
         case MOTOR_STA_ERROR:
@@ -422,21 +371,17 @@ static void usart_ctrl_cmd_handler(void)
                 case CMD_SW:
                     if(usart1_rx_data.data.udata == 0x0)                //关机控件
                     {
-                        g_app_param.motor_sta = MOTOR_STA_STOPPING;
+                        g_app_param.motor_cmd   = MOTOR_CMD_STOP;
                         trace_debug("motor stop\r\n");
                     }
                     else if(usart1_rx_data.data.udata == 0x3F800000)    //开机控件
                     {
-                        g_app_param.motor_sta   = MOTOR_STA_STARTING;
-                        g_app_param.iq_acc_dir  = ACC_START;
-
+                        g_app_param.motor_cmd   = MOTOR_CMD_STARTUP;
                         trace_debug("motor start\r\n");
                     }
                     break;
 
                 case CMD_TARGET_SPEED:
-                        trace_debug("target speed %.4f\r\n", usart1_rx_data.data.fdate);
-
                         if(g_app_param.motor_dir == MOTOR_DIR_CCW)  //逆
                         {
                             if(usart1_rx_data.data.fdate < 0.0f)
@@ -453,11 +398,11 @@ static void usart_ctrl_cmd_handler(void)
                         }
 
                         g_app_param.target_speed_ring_s = usart1_rx_data.data.fdate;
+
+                        trace_debug("target speed %.4f\r\n", usart1_rx_data.data.fdate);
                     break;
 
                 case CMD_TARGET_IQ:
-                        trace_debug("target Iq %.4f\r\n", usart1_rx_data.data.fdate);
-
                         if(g_app_param.motor_dir == MOTOR_DIR_CCW)  //逆
                         {
                             if(usart1_rx_data.data.fdate < 0.0f)
@@ -478,18 +423,18 @@ static void usart_ctrl_cmd_handler(void)
                         {
                             g_app_param.target_iq = 0.0f;
                         }
+
+                        trace_debug("target Iq %.4f\r\n", usart1_rx_data.data.fdate);
                     break;
 
                 case CMD_TARGET_UQ:
-                        trace_debug("target Uq %.4f\r\n", usart1_rx_data.data.fdate);
-
                         g_app_param.vf_target_uq  = usart1_rx_data.data.fdate;
                         g_app_param.iq_acc_dir = ACC_START;
+
+                        trace_debug("target Uq %.4f\r\n", usart1_rx_data.data.fdate);
                     break;
 
                 case CMD_VF_STEP_RAD_S:
-                        trace_debug("vf step rad_s %.4f\r\n", usart1_rx_data.data.fdate);
-
                         if(g_app_param.motor_dir == MOTOR_DIR_CCW)  //逆
                         {
                             if(usart1_rx_data.data.fdate < 0.0f)
@@ -506,6 +451,8 @@ static void usart_ctrl_cmd_handler(void)
                         }
 
                         g_app_param.vf_step_rad = usart1_rx_data.data.fdate;
+
+                        trace_debug("vf step rad_s %.4f\r\n", usart1_rx_data.data.fdate);
                     break;
 
                 case CMD_DIR:
@@ -577,14 +524,27 @@ int motor_ctrl_task(void)
 
     usart_ctrl_cmd_handler();    //串口控制命令处理
 
+    if(g_app_param.motor_cmd != g_app_param.old_motor_cmd)
+    {
+        if(g_app_param.motor_cmd == MOTOR_CMD_STARTUP)
+        {
+            g_app_param.motor_sta   = MOTOR_STA_STARTING;
+            g_app_param.iq_acc_dir  = ACC_START;
+        }
+        else if(g_app_param.motor_cmd == MOTOR_CMD_STOP)
+        {
+            g_app_param.motor_sta = MOTOR_STA_STOP;
+        }
+
+        g_app_param.old_motor_cmd = g_app_param.motor_cmd;
+    }
+
     // 电机状态机
     switch(g_app_param.motor_sta)
     {
         case MOTOR_STA_STOP:
             gpio_output_set(PWM_EN_PORT, PWM_EN_PIN, 0);
-            break;
 
-        case MOTOR_STA_STOPPING:
             if(g_app_param.motor_sta != g_app_param.pre_motor_sta)  //开始停机
             {
                 phase_pwm_stop();
@@ -596,16 +556,9 @@ int motor_ctrl_task(void)
                 g_app_param.iq_acc_dir = ACC_DONE;
 
                 foc_algorithm_init();                               //FOC 算法参数初始化
+
+                TIMER_STOP(m_speed_pid_timer);
             }
-
-            TIMER_STOP(m_speed_pid_timer);
-            gpio_output_set(PWM_EN_PORT, PWM_EN_PIN, 0);
-
-            g_app_param.motor_sta = MOTOR_STA_STOP;
-            break;
-
-        case MOTOR_STA_RUNNING:
-            gpio_output_set(PWM_EN_PORT, PWM_EN_PIN, 1);
             break;
 
         case MOTOR_STA_STARTING:

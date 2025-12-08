@@ -67,8 +67,6 @@ typedef enum
 {
     MOTOR_STA_STOP,     //停止
 
-    MOTOR_STA_STOPPING, //停止中
-    MOTOR_STA_RUNNING,  //运行中
     MOTOR_STA_STARTING, //启动中
 
     MOTOR_STA_VF_START,     //vf启动中
@@ -83,13 +81,6 @@ typedef enum
 
     MOTOR_STA_ERROR,        //故障状态
 } motor_sta_e;
-
-typedef enum
-{
-    MOTOR_START_STA_ACC,        //加速中
-    MOTOR_START_STA_ACC_END,    //加速完成
-    MOTOR_START_STA_CONST,      //恒速转动
-} motor_start_sta_e;
 
 typedef enum
 {
@@ -231,7 +222,6 @@ typedef struct
     motor_sta_e         pre_motor_sta;          // 电机前一状态
 
     motor_dir_e         motor_dir;              // 电机方向
-    motor_start_sta_e   motor_start_acc_sta;    // 电机启动加速状态
     motor_cmd_e         motor_cmd;              // 电机命令
     motor_cmd_e         old_motor_cmd;          // 上一次电机命令
 

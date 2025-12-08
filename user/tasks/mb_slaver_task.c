@@ -263,12 +263,11 @@ static void reg_update_2_sys(void)
     //开关机
     if(mb_reg[REG_SW] == 0)
     {
-        g_app_param.motor_sta = MOTOR_STA_STOPPING;
+        g_app_param.motor_cmd   = MOTOR_CMD_STOP;
     }
     else
     {
-        g_app_param.motor_sta   = MOTOR_STA_STARTING;
-        g_app_param.iq_acc_dir  = ACC_START;
+        g_app_param.motor_cmd   = MOTOR_CMD_STARTUP;
     }
 
     //目标速度

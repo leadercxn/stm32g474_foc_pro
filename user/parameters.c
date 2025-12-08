@@ -8,7 +8,7 @@ app_param_t g_app_param = {
     .motor_sta              = MOTOR_STA_STOP,
     .pre_motor_sta          = MOTOR_STA_STOP,
     .motor_dir              = MOTOR_DIR_CCW,
-    .motor_start_acc_sta    = MOTOR_START_STA_ACC,
+
     .motor_cmd              = MOTOR_CMD_NONE,
     .old_motor_cmd          = MOTOR_CMD_NONE,
 
