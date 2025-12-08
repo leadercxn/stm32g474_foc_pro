@@ -1,13 +1,8 @@
-/**********************************
-            
-**********************************/
 #include "speed_pid.h"
 #include "parameters.h"
 
 #define SPEED_PID_PERIOD    0.001F
 
-real32_T g_speed_ref;        //速度参考, 目标速度， rad/s
-real32_T g_speed_fdk;        //速度反馈，实际速度,  rad/s
 real32_T g_speed_pid_out;    //速度PID输出，也就是Q轴电流环的参考             
 
 speed_pid_t g_speed_pid;
@@ -41,7 +36,7 @@ void speed_pid_cal(real32_T ref_temp, real32_T fdb_temp, real32_T* out_temp, spe
 		}
 #endif
 
-  error = 6.28318548F * ref_temp - fdb_temp;             //2*pi的作用是 单位转换   Hz转换为rad/s
+  error = DOUBLE_PI * ref_temp - fdb_temp;             //2*pi的作用是 单位转换   Hz转换为rad/s
 
 #if 1
       //给定正转--实际SMO反转情况1

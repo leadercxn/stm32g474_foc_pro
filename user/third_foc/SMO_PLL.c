@@ -18,7 +18,7 @@ static float m_ld = 2500.0f;
 // RLd = R/Ld
 static float m_rld = 500.0f;
 
-static float m_gain_h = 7.0f;
+static float m_gain_h = 3.0f;
 
 pll_struct_t g_pll;		//PLL锁相环结构体
 smo_struct_t g_smo;		//滑膜结构体
@@ -57,7 +57,7 @@ void smo_observer(float u_alfa, float u_beta, float i_alfa, float i_beta, smo_st
 	smo->est_i_beta_d = (m_ld*u_beta) + (-m_rld*smo->est_i_beta) + (-m_ld*smo->v_beta);
 	//积分
 	smo->est_i_alfa += smo->est_i_alfa_d * FOC_PERIOD;
-	smo->est_i_beta +=	smo->est_i_beta_d * FOC_PERIOD;
+	smo->est_i_beta += smo->est_i_beta_d * FOC_PERIOD;
 	//实际值-估计值
   	smo->est_i_alfa_err = smo->est_i_alfa - i_alfa;
 	smo->est_i_beta_err = smo->est_i_beta - i_beta;
@@ -80,11 +80,12 @@ void pll_control(float e_alfa, float e_beta, pll_struct_t *pll)
 {
     float err = 0.0f;
 	err = -e_alfa * arm_cos_f32(pll->compensation_theta) - e_beta * arm_sin_f32(pll->compensation_theta);
-	pll->we = pll->p *err +  pll->err_sum;
+	pll->we = pll->p * err +  pll->err_sum;
 	pll->err_sum += pll->i * err * FOC_PERIOD;
 
 	//角速度积分->角度
 	pll->compensation_theta+= pll->we * FOC_PERIOD;
+
 	if(pll->compensation_theta > DOUBLE_PI)
 	{
 	  pll->compensation_theta -= DOUBLE_PI;
@@ -97,10 +98,11 @@ void pll_control(float e_alfa, float e_beta, pll_struct_t *pll)
 
 	pll->theta  =  pll->compensation_theta;
 		
-	 //we输出滤波
+	//we输出滤波
 	iir_filter(pll->we ,&pll->we, &g_pll_iir_lpf_par);
+
 	//电机反转补偿π
-	if((pll->we < -10.0f) && (g_speed_ref < 0.0f))
+	if((pll->we < -10.0f) && (g_app_param.target_speed_ring_s < 0.0f))
 	{
 		pll->theta += PI;
 
@@ -114,6 +116,7 @@ void pll_control(float e_alfa, float e_beta, pll_struct_t *pll)
 			pll->theta += DOUBLE_PI;
 		}
 	}
+
 }
 
 void smo_pll_param_init(smo_struct_t *smo, pll_struct_t *pll)

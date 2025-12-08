@@ -232,7 +232,7 @@ void foc_algorithm_step(void)
 	current_pid_calc(g_foc_input.id_ref, g_current_dq.id, &g_voltage_dq.vd, &m_current_d_pid); //D轴电流环PID  根据电流参考与电流反馈去计算 输出电压
   current_pid_calc(g_foc_input.iq_ref, g_current_dq.iq, &g_voltage_dq.vq, &m_current_q_pid); //Q轴电流环PID  根据电流参考与电流反馈去计算 输出电压
 
-  rev_park_transf(g_voltage_dq, m_transf_cos_sin, &m_volt_alpha_beta);                     //反park变换  通过电流环得到的dq轴电压信息结合角度信息，去把直流信息转化为交流信息用于SVPWM的输入
+  rev_park_transf(g_voltage_dq, m_transf_cos_sin, &m_volt_alpha_beta);                       //反park变换  通过电流环得到的dq轴电压信息结合角度信息，去把直流信息转化为交流信息用于SVPWM的输入
 
   m_foc_interface_sts.ekf_interface[0] = m_volt_alpha_beta.v_alpha;   //扩展卡尔曼估计转子位置与速度需要的输入信息
   m_foc_interface_sts.ekf_interface[1] = m_volt_alpha_beta.v_beta;    //状态观测器输入
@@ -247,7 +247,7 @@ void foc_algorithm_step(void)
   stm32_ekf_outputs_wrapper(&m_foc_interface_sts.ekf_interface[0], &g_foc_output.ekf[0],  //扩展卡尔曼估计转子位置与速度的输出函数
                             &m_foc_interface_sts.ekf_sts[0]);
 
-  svpwm_calc(m_volt_alpha_beta, g_foc_input.udc, g_foc_input.tpwm);       //SVPWM 计算模块
+  svpwm_calc(m_volt_alpha_beta, g_foc_input.udc, g_foc_input.tpwm);                       //SVPWM 计算模块
 
   stm32_ekf_update_wrapper(&m_foc_interface_sts.ekf_interface[0], &g_foc_output.ekf[0],   //扩展卡尔曼滤波算法的计算
                            &m_foc_interface_sts.ekf_sts[0]);  

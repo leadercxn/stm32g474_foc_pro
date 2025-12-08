@@ -178,7 +178,7 @@ static void sys_update_2_reg(void)
 
     mb_reg[REG_DIR]             = g_app_param.motor_dir;
 
-    memcpy((uint8_t *)&mb_reg[REG_TARGET_SPEED_L16], (uint8_t *)&g_app_param.motor_speed_set, 4);
+    memcpy((uint8_t *)&mb_reg[REG_TARGET_SPEED_L16], (uint8_t *)&g_app_param.target_speed_ring_s, 4);
 
 //电机调试参数
 
@@ -269,12 +269,10 @@ static void reg_update_2_sys(void)
     {
         g_app_param.motor_sta   = MOTOR_STA_STARTING;
         g_app_param.iq_acc_dir  = ACC_START;
-
-        g_speed_ref = g_app_param.motor_speed_set;
     }
 
     //目标速度
-    memcpy((uint8_t *)&g_app_param.motor_speed_set, (uint8_t *)&mb_reg[REG_TARGET_SPEED_L16], 4);
+    memcpy((uint8_t *)&g_app_param.target_speed_ring_s, (uint8_t *)&mb_reg[REG_TARGET_SPEED_L16], 4);
 
 
     // 只有在关机后，才可以修改参数

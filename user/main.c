@@ -52,6 +52,8 @@ static void param_init(void)
     g_mb_ctrl_param.pll_i = 1500.0f;
 
     g_mb_ctrl_param.motor_pole_pairs  = MOTOR_POLE_PAIRS;
+
+    foc_algorithm_init();
 }
 
 /**
